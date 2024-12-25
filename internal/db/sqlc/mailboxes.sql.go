@@ -13,26 +13,34 @@ import (
 const createMailbox = `-- name: CreateMailbox :one
 INSERT INTO mailboxes (address, password, domain_id, created_at, status)
 VALUES ($1, $2, $3, NOW(), $4)
-RETURNING id
+RETURNING id, address, password, domain_id, created_at, status, is_deleted
 `
 
 type CreateMailboxParams struct {
 	Address  string        `json:"address"`
 	Password string        `json:"password"`
 	DomainID sql.NullInt32 `json:"domain_id"`
-	Status   sql.NullInt32 `json:"status"`
+	Status   int32         `json:"status"`
 }
 
-func (q *Queries) CreateMailbox(ctx context.Context, arg CreateMailboxParams) (int32, error) {
+func (q *Queries) CreateMailbox(ctx context.Context, arg CreateMailboxParams) (Mailbox, error) {
 	row := q.db.QueryRowContext(ctx, createMailbox,
 		arg.Address,
 		arg.Password,
 		arg.DomainID,
 		arg.Status,
 	)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
+	var i Mailbox
+	err := row.Scan(
+		&i.ID,
+		&i.Address,
+		&i.Password,
+		&i.DomainID,
+		&i.CreatedAt,
+		&i.Status,
+		&i.IsDeleted,
+	)
+	return i, err
 }
 
 const deleteMailbox = `-- name: DeleteMailbox :exec
@@ -55,7 +63,7 @@ type GetAllMailboxesRow struct {
 	ID        int32         `json:"id"`
 	Address   string        `json:"address"`
 	DomainID  sql.NullInt32 `json:"domain_id"`
-	Status    sql.NullInt32 `json:"status"`
+	Status    int32         `json:"status"`
 	CreatedAt sql.NullTime  `json:"created_at"`
 }
 
@@ -99,7 +107,7 @@ type GetMailboxesByDomainRow struct {
 	Address   string        `json:"address"`
 	Password  string        `json:"password"`
 	DomainID  sql.NullInt32 `json:"domain_id"`
-	Status    sql.NullInt32 `json:"status"`
+	Status    int32         `json:"status"`
 	CreatedAt sql.NullTime  `json:"created_at"`
 }
 
@@ -133,29 +141,29 @@ func (q *Queries) GetMailboxesByDomain(ctx context.Context, address string) ([]G
 	return items, nil
 }
 
-const getmailboxesByDomain = `-- name: GetmailboxesByDomain :many
+const getMailboxesByDomainName = `-- name: GetMailboxesByDomainName :many
 SELECT id, address, status, created_at
 FROM mailboxes
 WHERE domain_id = $1
 ORDER BY created_at DESC
 `
 
-type GetmailboxesByDomainRow struct {
-	ID        int32         `json:"id"`
-	Address   string        `json:"address"`
-	Status    sql.NullInt32 `json:"status"`
-	CreatedAt sql.NullTime  `json:"created_at"`
+type GetMailboxesByDomainNameRow struct {
+	ID        int32        `json:"id"`
+	Address   string       `json:"address"`
+	Status    int32        `json:"status"`
+	CreatedAt sql.NullTime `json:"created_at"`
 }
 
-func (q *Queries) GetmailboxesByDomain(ctx context.Context, domainID sql.NullInt32) ([]GetmailboxesByDomainRow, error) {
-	rows, err := q.db.QueryContext(ctx, getmailboxesByDomain, domainID)
+func (q *Queries) GetMailboxesByDomainName(ctx context.Context, domainID sql.NullInt32) ([]GetMailboxesByDomainNameRow, error) {
+	rows, err := q.db.QueryContext(ctx, getMailboxesByDomainName, domainID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GetmailboxesByDomainRow{}
+	items := []GetMailboxesByDomainNameRow{}
 	for rows.Next() {
-		var i GetmailboxesByDomainRow
+		var i GetMailboxesByDomainNameRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Address,
@@ -182,8 +190,8 @@ WHERE id = $2
 `
 
 type SetMailboxStatusParams struct {
-	Status sql.NullInt32 `json:"status"`
-	ID     int32         `json:"id"`
+	Status int32 `json:"status"`
+	ID     int32 `json:"id"`
 }
 
 func (q *Queries) SetMailboxStatus(ctx context.Context, arg SetMailboxStatusParams) error {

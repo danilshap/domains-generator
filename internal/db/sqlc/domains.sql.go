@@ -13,26 +13,34 @@ import (
 const createDomain = `-- name: CreateDomain :one
 INSERT INTO domains (name, provider, status, created_at, expires_at)
 VALUES ($1, $2, $3, NOW(), $4)
-RETURNING id
+RETURNING id, name, provider, status, created_at, expires_at, is_deleted
 `
 
 type CreateDomainParams struct {
-	Name      string        `json:"name"`
-	Provider  string        `json:"provider"`
-	Status    sql.NullInt32 `json:"status"`
-	ExpiresAt sql.NullTime  `json:"expires_at"`
+	Name      string       `json:"name"`
+	Provider  string       `json:"provider"`
+	Status    int32        `json:"status"`
+	ExpiresAt sql.NullTime `json:"expires_at"`
 }
 
-func (q *Queries) CreateDomain(ctx context.Context, arg CreateDomainParams) (int32, error) {
+func (q *Queries) CreateDomain(ctx context.Context, arg CreateDomainParams) (Domain, error) {
 	row := q.db.QueryRowContext(ctx, createDomain,
 		arg.Name,
 		arg.Provider,
 		arg.Status,
 		arg.ExpiresAt,
 	)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
+	var i Domain
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Provider,
+		&i.Status,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.IsDeleted,
+	)
+	return i, err
 }
 
 const deleteDomain = `-- name: DeleteDomain :exec
@@ -46,29 +54,25 @@ func (q *Queries) DeleteDomain(ctx context.Context, id int32) error {
 }
 
 const getAllDomains = `-- name: GetAllDomains :many
-SELECT id, name, provider, status, created_at, expires_at
-FROM domains
+SELECT id, name, provider, status, created_at, expires_at, is_deleted FROM domains
 ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
 `
 
-type GetAllDomainsRow struct {
-	ID        int32         `json:"id"`
-	Name      string        `json:"name"`
-	Provider  string        `json:"provider"`
-	Status    sql.NullInt32 `json:"status"`
-	CreatedAt sql.NullTime  `json:"created_at"`
-	ExpiresAt sql.NullTime  `json:"expires_at"`
+type GetAllDomainsParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
-func (q *Queries) GetAllDomains(ctx context.Context) ([]GetAllDomainsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllDomains)
+func (q *Queries) GetAllDomains(ctx context.Context, arg GetAllDomainsParams) ([]Domain, error) {
+	rows, err := q.db.QueryContext(ctx, getAllDomains, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GetAllDomainsRow{}
+	items := []Domain{}
 	for rows.Next() {
-		var i GetAllDomainsRow
+		var i Domain
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -76,6 +80,7 @@ func (q *Queries) GetAllDomains(ctx context.Context) ([]GetAllDomainsRow, error)
 			&i.Status,
 			&i.CreatedAt,
 			&i.ExpiresAt,
+			&i.IsDeleted,
 		); err != nil {
 			return nil, err
 		}
@@ -90,24 +95,14 @@ func (q *Queries) GetAllDomains(ctx context.Context) ([]GetAllDomainsRow, error)
 	return items, nil
 }
 
-const getDomainByName = `-- name: GetDomainByName :one
-SELECT id, name, provider, status, created_at, expires_at
-FROM domains
-WHERE name = $1
+const getDomainByID = `-- name: GetDomainByID :one
+SELECT id, name, provider, status, created_at, expires_at, is_deleted FROM domains
+WHERE id = $1 LIMIT 1
 `
 
-type GetDomainByNameRow struct {
-	ID        int32         `json:"id"`
-	Name      string        `json:"name"`
-	Provider  string        `json:"provider"`
-	Status    sql.NullInt32 `json:"status"`
-	CreatedAt sql.NullTime  `json:"created_at"`
-	ExpiresAt sql.NullTime  `json:"expires_at"`
-}
-
-func (q *Queries) GetDomainByName(ctx context.Context, name string) (GetDomainByNameRow, error) {
-	row := q.db.QueryRowContext(ctx, getDomainByName, name)
-	var i GetDomainByNameRow
+func (q *Queries) GetDomainByID(ctx context.Context, id int32) (Domain, error) {
+	row := q.db.QueryRowContext(ctx, getDomainByID, id)
+	var i Domain
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -115,8 +110,41 @@ func (q *Queries) GetDomainByName(ctx context.Context, name string) (GetDomainBy
 		&i.Status,
 		&i.CreatedAt,
 		&i.ExpiresAt,
+		&i.IsDeleted,
 	)
 	return i, err
+}
+
+const getDomainByName = `-- name: GetDomainByName :one
+SELECT id, name, provider, status, created_at, expires_at, is_deleted
+FROM domains
+WHERE name = $1
+`
+
+func (q *Queries) GetDomainByName(ctx context.Context, name string) (Domain, error) {
+	row := q.db.QueryRowContext(ctx, getDomainByName, name)
+	var i Domain
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Provider,
+		&i.Status,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.IsDeleted,
+	)
+	return i, err
+}
+
+const getDomainsCount = `-- name: GetDomainsCount :one
+SELECT COUNT(*) FROM domains
+`
+
+func (q *Queries) GetDomainsCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getDomainsCount)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const setDomainStatus = `-- name: SetDomainStatus :exec
@@ -126,8 +154,8 @@ WHERE id = $2
 `
 
 type SetDomainStatusParams struct {
-	Status sql.NullInt32 `json:"status"`
-	ID     int32         `json:"id"`
+	Status int32 `json:"status"`
+	ID     int32 `json:"id"`
 }
 
 func (q *Queries) SetDomainStatus(ctx context.Context, arg SetDomainStatusParams) error {

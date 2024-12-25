@@ -9,13 +9,13 @@ import (
 )
 
 type Domain struct {
-	ID        int32         `json:"id"`
-	Name      string        `json:"name"`
-	Provider  string        `json:"provider"`
-	Status    sql.NullInt32 `json:"status"`
-	CreatedAt sql.NullTime  `json:"created_at"`
-	ExpiresAt sql.NullTime  `json:"expires_at"`
-	IsDeleted interface{}   `json:"is_deleted"`
+	ID        int32        `json:"id"`
+	Name      string       `json:"name"`
+	Provider  string       `json:"provider"`
+	Status    int32        `json:"status"`
+	CreatedAt sql.NullTime `json:"created_at"`
+	ExpiresAt sql.NullTime `json:"expires_at"`
+	IsDeleted sql.NullBool `json:"is_deleted"`
 }
 
 type Mailbox struct {
@@ -24,6 +24,6 @@ type Mailbox struct {
 	Password  string        `json:"password"`
 	DomainID  sql.NullInt32 `json:"domain_id"`
 	CreatedAt sql.NullTime  `json:"created_at"`
-	Status    sql.NullInt32 `json:"status"`
-	IsDeleted interface{}   `json:"is_deleted"`
+	Status    int32         `json:"status"`
+	IsDeleted sql.NullBool  `json:"is_deleted"`
 }

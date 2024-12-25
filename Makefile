@@ -16,4 +16,23 @@ migratedown:
 sqlc:
 	sqlc generate
 
-.PHONY: postgres createdb dropdb migrateup migrateup_last migratedown migratedown_last sqlc
+test:
+	go test -v -cover ./...
+
+server:
+	go run cmd/api/main.go
+
+.PHONY: templ
+templ:
+	go install github.com/a-h/templ/cmd/templ@latest
+	templ generate
+
+.PHONY: deps
+deps:
+	go mod tidy
+	go get github.com/a-h/templ
+
+.PHONY: generate
+generate: deps templ
+
+.PHONY: postgres createdb dropdb migrateup migrateup_last migratedown migratedown_last sqlc test server

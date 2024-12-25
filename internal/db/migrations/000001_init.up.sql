@@ -2,10 +2,10 @@ CREATE TABLE IF NOT EXISTS domains (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     provider TEXT NOT NULL,
-    status INT,
+    status INT NOT NULL,
     created_at TIMESTAMP DEFAULT now (),
     expires_at TIMESTAMP,
-    is_deleted BIT
+    is_deleted BOOL DEFAULT FALSE
 );
 
 CREATE UNIQUE INDEX idx_domains_name ON domains (name);
@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS mailboxes (
     password TEXT NOT NULL,
     domain_id INT REFERENCES domains (id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT now (),
-    status INT,
-    is_deleted BIT
+    status INT NOT NULL,
+    is_deleted BOOL DEFAULT FALSE
 );
 
 CREATE UNIQUE INDEX idx_mailboxes_address ON mailboxes (address);

@@ -1,2 +1,3 @@
-DROP TABLE IF EXISTS domains
-DROP TABLE IF EXISTS mailboxes
+DROP TABLE IF EXISTS domains;
+
+DROP TABLE IF EXISTS mailboxes;
