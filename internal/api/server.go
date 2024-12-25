@@ -36,7 +36,20 @@ func (s *Server) setupRoutes() {
 		r.Get("/new", s.handleNewDomainForm)
 		r.Post("/", s.handleCreateDomain)
 		r.Get("/{id}", s.handleDomainDetails)
+		r.Get("/{id}/edit", s.handleEditDomainForm)
+		r.Get("/{id}/status", s.handleStatusForm)
+		r.Put("/{id}", s.handleUpdateDomain)
+		r.Put("/{id}/status", s.handleUpdateStatus)
 		r.Delete("/{id}", s.handleDeleteDomain)
+	})
+	s.router.Route("/mailboxes", func(r chi.Router) {
+		r.Get("/", s.handleListMailboxes)
+		r.Get("/new", s.handleNewMailboxForm)
+		r.Post("/", s.handleCreateMailbox)
+		r.Get("/{id}", s.handleMailboxDetails)
+		r.Get("/{id}/edit", s.handleEditMailboxForm)
+		r.Put("/{id}", s.handleUpdateMailbox)
+		r.Delete("/{id}", s.handleDeleteMailbox)
 	})
 }
 

@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS domains (
     status INT NOT NULL,
     created_at TIMESTAMP DEFAULT now (),
     expires_at TIMESTAMP,
-    is_deleted BOOL DEFAULT FALSE
+    is_deleted BOOL DEFAULT FALSE,
+    settings JSONB DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_domains_name ON domains (name);
@@ -16,10 +17,14 @@ CREATE TABLE IF NOT EXISTS mailboxes (
     id SERIAL PRIMARY KEY,
     address TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
-    domain_id INT REFERENCES domains (id) ON DELETE CASCADE,
+    domain_id INT NOT NULL REFERENCES domains (id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT now (),
     status INT NOT NULL,
-    is_deleted BOOL DEFAULT FALSE
+    is_deleted BOOL DEFAULT FALSE,
+    settings JSONB DEFAULT '{}',
+    last_login TIMESTAMP,
+    last_password_change TIMESTAMP,
+    password_expires_at TIMESTAMP
 );
 
 CREATE UNIQUE INDEX idx_mailboxes_address ON mailboxes (address);

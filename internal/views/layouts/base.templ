@@ -14,7 +14,6 @@ templ Base(content templ.Component) {
 		</head>
 		<body class="bg-gray-50">
 			<div class="min-h-screen">
-				<!-- Боковая навигация -->
 				<div class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200">
 					<div class="flex h-16 shrink-0 items-center px-6 border-b border-gray-200">
 						<span class="text-xl font-bold text-gray-900">DM</span>
@@ -58,9 +57,7 @@ templ Base(content templ.Component) {
 						</ul>
 					</nav>
 				</div>
-				<!-- Основной контент -->
 				<div class="pl-64">
-					<!-- Верхняя панель -->
 					<div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
 						<div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
 							<div class="flex flex-1"></div>
@@ -72,12 +69,33 @@ templ Base(content templ.Component) {
 							</div>
 						</div>
 					</div>
-					<!-- Основное содержимое -->
 					<main class="py-6 px-4 sm:px-6 lg:px-8">
 						@content
 					</main>
 				</div>
 			</div>
+			<script>
+				function validateDomainForm(form) {
+					const domain = form.name.value;
+					const pattern = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
+					if (!pattern.test(domain)) {
+						alert("Please enter a valid domain name");
+						return false;
+					}
+					return true;
+				}
+
+				function updateEmailAddress() {
+					const localPart = document.getElementById('local_part').value;
+					const domainSelect = document.getElementById('domain_id');
+					const selectedOption = domainSelect.options[domainSelect.selectedIndex];
+					const domain = selectedOption.getAttribute('data-domain');
+					
+					if (localPart && domain) {
+						document.getElementById('address').value = `${localPart}@${domain}`;
+					}
+				}
+			</script>
 		</body>
 	</html>
 }

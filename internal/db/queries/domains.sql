@@ -8,8 +8,13 @@ SELECT * FROM domains
 WHERE id = $1 LIMIT 1;
 
 -- name: GetAllDomains :many
-SELECT * FROM domains
-ORDER BY created_at DESC
+SELECT d.*,
+       COUNT(m.id) FILTER (WHERE m.is_deleted = false) as mailbox_count
+FROM domains d
+LEFT JOIN mailboxes m ON d.id = m.domain_id
+WHERE d.is_deleted = false
+GROUP BY d.id
+ORDER BY d.created_at DESC
 LIMIT $1 OFFSET $2;
 
 -- name: GetDomainsCount :one
@@ -20,10 +25,15 @@ SELECT id, name, provider, status, created_at, expires_at, is_deleted
 FROM domains
 WHERE name = $1;
 
+-- name: UpdateDomain :exec
+UPDATE domains 
+SET name = $2, provider = $3
+WHERE id = $1;
+
 -- name: SetDomainStatus :exec
-UPDATE domains
-SET status = $1
-WHERE id = $2;
+UPDATE domains 
+SET status = $2
+WHERE id = $1;
 
 -- name: DeleteDomain :exec
 DELETE FROM domains

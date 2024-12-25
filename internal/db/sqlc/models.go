@@ -6,24 +6,31 @@ package db
 
 import (
 	"database/sql"
+
+	"github.com/sqlc-dev/pqtype"
 )
 
 type Domain struct {
-	ID        int32        `json:"id"`
-	Name      string       `json:"name"`
-	Provider  string       `json:"provider"`
-	Status    int32        `json:"status"`
-	CreatedAt sql.NullTime `json:"created_at"`
-	ExpiresAt sql.NullTime `json:"expires_at"`
-	IsDeleted sql.NullBool `json:"is_deleted"`
+	ID        int32                 `json:"id"`
+	Name      string                `json:"name"`
+	Provider  string                `json:"provider"`
+	Status    int32                 `json:"status"`
+	CreatedAt sql.NullTime          `json:"created_at"`
+	ExpiresAt sql.NullTime          `json:"expires_at"`
+	IsDeleted sql.NullBool          `json:"is_deleted"`
+	Settings  pqtype.NullRawMessage `json:"settings"`
 }
 
 type Mailbox struct {
-	ID        int32         `json:"id"`
-	Address   string        `json:"address"`
-	Password  string        `json:"password"`
-	DomainID  sql.NullInt32 `json:"domain_id"`
-	CreatedAt sql.NullTime  `json:"created_at"`
-	Status    int32         `json:"status"`
-	IsDeleted sql.NullBool  `json:"is_deleted"`
+	ID                 int32                 `json:"id"`
+	Address            string                `json:"address"`
+	Password           string                `json:"password"`
+	DomainID           int32                 `json:"domain_id"`
+	CreatedAt          sql.NullTime          `json:"created_at"`
+	Status             int32                 `json:"status"`
+	IsDeleted          sql.NullBool          `json:"is_deleted"`
+	Settings           pqtype.NullRawMessage `json:"settings"`
+	LastLogin          sql.NullTime          `json:"last_login"`
+	LastPasswordChange sql.NullTime          `json:"last_password_change"`
+	PasswordExpiresAt  sql.NullTime          `json:"password_expires_at"`
 }

@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	"github.com/danilshap/domains-generator/pkg/utils"
@@ -14,7 +13,7 @@ func TestCreateMailbox(t *testing.T) {
 	arg := CreateMailboxParams{
 		Address:  utils.RandomEmail(),
 		Password: utils.RandomString(12),
-		DomainID: sql.NullInt32{Int32: domain.ID, Valid: true},
+		DomainID: domain.ID,
 		Status:   1,
 	}
 
@@ -37,7 +36,10 @@ func TestGetAllMailboxes(t *testing.T) {
 		createRandomMailbox(t)
 	}
 
-	mailboxes, err := testQueries.GetAllMailboxes(context.Background())
+	mailboxes, err := testQueries.GetAllMailboxes(context.Background(), GetAllMailboxesParams{
+		Limit:  10,
+		Offset: 0,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, mailboxes)
 	require.GreaterOrEqual(t, len(mailboxes), 5)
@@ -120,7 +122,7 @@ func createRandomMailbox(t *testing.T) Mailbox {
 	arg := CreateMailboxParams{
 		Address:  utils.RandomEmail(),
 		Password: utils.RandomString(12),
-		DomainID: sql.NullInt32{Int32: domain.ID, Valid: true},
+		DomainID: domain.ID,
 		Status:   1,
 	}
 

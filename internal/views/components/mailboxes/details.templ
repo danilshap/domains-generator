@@ -1,0 +1,81 @@
+package mailboxes
+
+import (
+	"fmt"
+	db "github.com/danilshap/domains-generator/internal/db/sqlc"
+	"github.com/danilshap/domains-generator/internal/views/components/domains"
+)
+
+type DetailsData struct {
+	Mailbox db.Mailbox
+	Domain  db.Domain
+}
+
+templ Details(data DetailsData) {
+	<div class="bg-white shadow sm:rounded-lg">
+		<div class="px-4 py-5 sm:p-6">
+			<div id="mailbox-form"></div>
+			<div class="border-b border-gray-200 pb-5">
+				<div class="flex justify-between items-center">
+					<div>
+						<div class="flex items-center gap-3">
+							<h3 class="text-2xl font-semibold leading-6 text-gray-900">{ data.Mailbox.Address }</h3>
+							@domains.StatusBadge(data.Mailbox.Status)
+						</div>
+						<p class="mt-2 text-sm text-gray-500">Email account details and configuration</p>
+					</div>
+					<div class="flex gap-3">
+						if data.Mailbox.Status == 1 {
+							<button
+								class="inline-flex items-center rounded-md bg-yellow-100 px-3 py-2 text-sm font-semibold text-yellow-800 hover:bg-yellow-200"
+								hx-put={ fmt.Sprintf("/mailboxes/%d/status", data.Mailbox.ID) }
+								hx-vals={ `{"status": 2}` }
+								hx-confirm="Are you sure you want to deactivate this email account?"
+								hx-target="body"
+								hx-swap="none"
+								hx-on::after-request="window.location.reload()"
+							>
+								<i class="fas fa-ban mr-2"></i>
+								Deactivate Account
+							</button>
+						} else if data.Mailbox.Status == 2 {
+							<button
+								class="inline-flex items-center rounded-md bg-green-100 px-3 py-2 text-sm font-semibold text-green-800 hover:bg-green-200"
+								hx-put={ fmt.Sprintf("/mailboxes/%d/status", data.Mailbox.ID) }
+								hx-vals={ `{"status": 1}` }
+								hx-confirm="Are you sure you want to activate this email account?"
+								hx-target="body"
+								hx-swap="none"
+								hx-on::after-request="window.location.reload()"
+							>
+								<i class="fas fa-check mr-2"></i>
+								Activate Account
+							</button>
+						}
+						<button
+							class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+							hx-get={ fmt.Sprintf("/mailboxes/%d/edit", data.Mailbox.ID) }
+							hx-target="#mailbox-form"
+						>
+							<i class="fas fa-edit mr-2"></i>
+							Edit Account
+						</button>
+					</div>
+				</div>
+			</div>
+			<div class="mt-6">
+				<h4 class="text-base font-semibold leading-7 text-gray-900">Account Information</h4>
+				<dl class="mt-4 space-y-4">
+					<div>
+						<dt class="text-sm font-medium text-gray-500">Domain</dt>
+						<dd class="mt-1 text-sm text-gray-900">{ data.Domain.Name }</dd>
+					</div>
+					<div>
+						<dt class="text-sm font-medium text-gray-500">Created At</dt>
+						<dd class="mt-1 text-sm text-gray-900">{ data.Mailbox.CreatedAt.Time.Format("2006-01-02 15:04:05") }</dd>
+					</div>
+				</dl>
+			</div>
+		</div>
+	</div>
+}

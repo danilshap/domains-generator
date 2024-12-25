@@ -5,14 +5,52 @@ import (
 	db "github.com/danilshap/domains-generator/internal/db/sqlc"
 )
 
+type DomainDetailsData struct {
+	Domain      db.Domain
+	Mailboxes   []db.Mailbox
+	CurrentPage int32
+	TotalPages  int32
+	PageSize    int32
+}
+
 templ domainHeader(domain db.Domain) {
 	<div class="border-b border-gray-200 pb-5">
 		<div class="flex justify-between items-center">
 			<div>
-				<h3 class="text-2xl font-semibold leading-6 text-gray-900">{ domain.Name }</h3>
+				<div class="flex items-center gap-3">
+					<h3 class="text-2xl font-semibold leading-6 text-gray-900">{ domain.Name }</h3>
+					@StatusBadge(domain.Status)
+				</div>
 				<p class="mt-2 text-sm text-gray-500">Domain details and configuration</p>
 			</div>
 			<div class="flex gap-3">
+				if domain.Status == 1 {
+					<button
+						class="inline-flex items-center rounded-md bg-yellow-100 px-3 py-2 text-sm font-semibold text-yellow-800 hover:bg-yellow-200"
+						hx-put={ fmt.Sprintf("/domains/%d/status", domain.ID) }
+						hx-vals={ `{"status": 2}` }
+						hx-confirm="Are you sure you want to deactivate this domain?"
+						hx-target="body"
+						hx-swap="none"
+						hx-on::after-request="window.location.reload()"
+					>
+						<i class="fas fa-ban mr-2"></i>
+						Deactivate Domain
+					</button>
+				} else if domain.Status == 2 {
+					<button
+						class="inline-flex items-center rounded-md bg-green-100 px-3 py-2 text-sm font-semibold text-green-800 hover:bg-green-200"
+						hx-put={ fmt.Sprintf("/domains/%d/status", domain.ID) }
+						hx-vals={ `{"status": 1}` }
+						hx-confirm="Are you sure you want to activate this domain?"
+						hx-target="body"
+						hx-swap="none"
+						hx-on::after-request="window.location.reload()"
+					>
+						<i class="fas fa-check mr-2"></i>
+						Activate Domain
+					</button>
+				}
 				<button
 					class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
 					hx-get={ fmt.Sprintf("/domains/%d/edit", domain.ID) }
@@ -39,16 +77,6 @@ templ domainInfo(domain db.Domain) {
 				<dd class="mt-1 text-sm text-gray-900">{ domain.Provider }</dd>
 			</div>
 			<div>
-				<dt class="text-sm font-medium text-gray-500">Status</dt>
-				<dd class="mt-1">
-					if domain.Status == 1 {
-						<span class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">Active</span>
-					} else {
-						<span class="inline-flex rounded-full bg-yellow-100 px-2 text-xs font-semibold leading-5 text-yellow-800">Inactive</span>
-					}
-				</dd>
-			</div>
-			<div>
 				<dt class="text-sm font-medium text-gray-500">Created At</dt>
 				<dd class="mt-1 text-sm text-gray-900">{ domain.CreatedAt.Time.Format("2006-01-02 15:04:05") }</dd>
 			</div>
@@ -60,46 +88,14 @@ templ dnsConfig(domain db.Domain) {
 	<div class="pl-6">
 		<h4 class="text-base font-semibold leading-7 text-gray-900">DNS Configuration</h4>
 		<dl class="mt-4 space-y-4">
-			<div>
-				<dt class="text-sm font-medium text-gray-500">Nameservers</dt>
-				<dd class="mt-1 text-sm text-gray-900">
-					<ul class="list-disc pl-5">
-						<li>{ fmt.Sprintf("ns1.%s", domain.Name) }</li>
-						<li>{ fmt.Sprintf("ns2.%s", domain.Name) }</li>
-					</ul>
-				</dd>
-			</div>
-			<div>
-				<dt class="text-sm font-medium text-gray-500">DNS Records</dt>
-				<dd class="mt-1">
-					<table class="min-w-full divide-y divide-gray-300">
-						<thead>
-							<tr class="bg-gray-50">
-								<th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Type</th>
-								<th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Name</th>
-								<th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Value</th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-gray-200 bg-white">
-							<tr>
-								<td class="px-3 py-2 text-xs text-gray-900">A</td>
-								<td class="px-3 py-2 text-xs text-gray-900">/@</td>
-								<td class="px-3 py-2 text-xs text-gray-900">192.168.1.1</td>
-							</tr>
-							<tr>
-								<td class="px-3 py-2 text-xs text-gray-900">MX</td>
-								<td class="px-3 py-2 text-xs text-gray-900">/@</td>
-								<td class="px-3 py-2 text-xs text-gray-900">{ domain.Name }</td>
-							</tr>
-						</tbody>
-					</table>
-				</dd>
+			<div class="text-sm text-gray-500">
+				DNS configuration will be available soon
 			</div>
 		</dl>
 	</div>
 }
 
-templ mailboxes(domain db.Domain) {
+templ MailboxesTable(data DomainDetailsData) {
 	<div class="mt-8 border-t border-gray-200 pt-6">
 		<h4 class="text-base font-semibold leading-7 text-gray-900">Associated Mailboxes</h4>
 		<div class="mt-4">
@@ -115,31 +111,58 @@ templ mailboxes(domain db.Domain) {
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-gray-200 bg-white">
-					<tr>
-						<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900">{ fmt.Sprintf("admin@%s", domain.Name) }</td>
-						<td class="whitespace-nowrap px-3 py-4 text-sm">
-							<span class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">Active</span>
-						</td>
-						<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">2024-01-01</td>
-						<td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-							<button class="text-indigo-600 hover:text-indigo-900">View</button>
-						</td>
-					</tr>
+					for _, mailbox := range data.Mailboxes {
+						<tr>
+							<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900">{ mailbox.Address }</td>
+							<td class="whitespace-nowrap px-3 py-4 text-sm">
+								@StatusBadge(mailbox.Status)
+							</td>
+							<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{ mailbox.CreatedAt.Time.Format("2006-01-02 15:04:05") }</td>
+							<td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+								<button class="text-indigo-600 hover:text-indigo-900">View</button>
+							</td>
+						</tr>
+					}
 				</tbody>
 			</table>
+			if data.TotalPages > 1 {
+				<div class="mt-4">
+					<nav class="flex items-center justify-between">
+						<div class="flex flex-1 justify-between sm:hidden">
+							if data.CurrentPage > 1 {
+								<button
+									class="relative inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+									hx-get={ fmt.Sprintf("/domains/%d?page=%d", data.Domain.ID, data.CurrentPage-1) }
+									hx-target="#mailboxes-table"
+								>Previous</button>
+							}
+							if data.CurrentPage < data.TotalPages {
+								<button
+									class="relative ml-3 inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+									hx-get={ fmt.Sprintf("/domains/%d?page=%d", data.Domain.ID, data.CurrentPage+1) }
+									hx-target="#mailboxes-table"
+								>Next</button>
+							}
+						</div>
+					</nav>
+				</div>
+			}
 		</div>
 	</div>
 }
 
-templ DomainDetails(domain db.Domain) {
+templ DomainDetails(data DomainDetailsData) {
 	<div class="bg-white shadow sm:rounded-lg">
 		<div class="px-4 py-5 sm:p-6">
-			@domainHeader(domain)
+			<div id="domain-form"></div>
+			@domainHeader(data.Domain)
 			<div class="mt-6 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2">
-				@domainInfo(domain)
-				@dnsConfig(domain)
+				@domainInfo(data.Domain)
+				@dnsConfig(data.Domain)
 			</div>
-			@mailboxes(domain)
+			<div id="mailboxes-table">
+				@MailboxesTable(data)
+			</div>
 		</div>
 	</div>
 }

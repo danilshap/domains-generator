@@ -8,12 +8,14 @@ package db
 import (
 	"context"
 	"database/sql"
+
+	"github.com/sqlc-dev/pqtype"
 )
 
 const createDomain = `-- name: CreateDomain :one
 INSERT INTO domains (name, provider, status, created_at, expires_at)
 VALUES ($1, $2, $3, NOW(), $4)
-RETURNING id, name, provider, status, created_at, expires_at, is_deleted
+RETURNING id, name, provider, status, created_at, expires_at, is_deleted, settings
 `
 
 type CreateDomainParams struct {
@@ -39,6 +41,7 @@ func (q *Queries) CreateDomain(ctx context.Context, arg CreateDomainParams) (Dom
 		&i.CreatedAt,
 		&i.ExpiresAt,
 		&i.IsDeleted,
+		&i.Settings,
 	)
 	return i, err
 }
@@ -54,8 +57,13 @@ func (q *Queries) DeleteDomain(ctx context.Context, id int32) error {
 }
 
 const getAllDomains = `-- name: GetAllDomains :many
-SELECT id, name, provider, status, created_at, expires_at, is_deleted FROM domains
-ORDER BY created_at DESC
+SELECT d.id, d.name, d.provider, d.status, d.created_at, d.expires_at, d.is_deleted, d.settings,
+       COUNT(m.id) FILTER (WHERE m.is_deleted = false) as mailbox_count
+FROM domains d
+LEFT JOIN mailboxes m ON d.id = m.domain_id
+WHERE d.is_deleted = false
+GROUP BY d.id
+ORDER BY d.created_at DESC
 LIMIT $1 OFFSET $2
 `
 
@@ -64,15 +72,27 @@ type GetAllDomainsParams struct {
 	Offset int32 `json:"offset"`
 }
 
-func (q *Queries) GetAllDomains(ctx context.Context, arg GetAllDomainsParams) ([]Domain, error) {
+type GetAllDomainsRow struct {
+	ID           int32                 `json:"id"`
+	Name         string                `json:"name"`
+	Provider     string                `json:"provider"`
+	Status       int32                 `json:"status"`
+	CreatedAt    sql.NullTime          `json:"created_at"`
+	ExpiresAt    sql.NullTime          `json:"expires_at"`
+	IsDeleted    sql.NullBool          `json:"is_deleted"`
+	Settings     pqtype.NullRawMessage `json:"settings"`
+	MailboxCount int64                 `json:"mailbox_count"`
+}
+
+func (q *Queries) GetAllDomains(ctx context.Context, arg GetAllDomainsParams) ([]GetAllDomainsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAllDomains, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Domain{}
+	items := []GetAllDomainsRow{}
 	for rows.Next() {
-		var i Domain
+		var i GetAllDomainsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -81,6 +101,8 @@ func (q *Queries) GetAllDomains(ctx context.Context, arg GetAllDomainsParams) ([
 			&i.CreatedAt,
 			&i.ExpiresAt,
 			&i.IsDeleted,
+			&i.Settings,
+			&i.MailboxCount,
 		); err != nil {
 			return nil, err
 		}
@@ -96,7 +118,7 @@ func (q *Queries) GetAllDomains(ctx context.Context, arg GetAllDomainsParams) ([
 }
 
 const getDomainByID = `-- name: GetDomainByID :one
-SELECT id, name, provider, status, created_at, expires_at, is_deleted FROM domains
+SELECT id, name, provider, status, created_at, expires_at, is_deleted, settings FROM domains
 WHERE id = $1 LIMIT 1
 `
 
@@ -111,6 +133,7 @@ func (q *Queries) GetDomainByID(ctx context.Context, id int32) (Domain, error) {
 		&i.CreatedAt,
 		&i.ExpiresAt,
 		&i.IsDeleted,
+		&i.Settings,
 	)
 	return i, err
 }
@@ -121,9 +144,19 @@ FROM domains
 WHERE name = $1
 `
 
-func (q *Queries) GetDomainByName(ctx context.Context, name string) (Domain, error) {
+type GetDomainByNameRow struct {
+	ID        int32        `json:"id"`
+	Name      string       `json:"name"`
+	Provider  string       `json:"provider"`
+	Status    int32        `json:"status"`
+	CreatedAt sql.NullTime `json:"created_at"`
+	ExpiresAt sql.NullTime `json:"expires_at"`
+	IsDeleted sql.NullBool `json:"is_deleted"`
+}
+
+func (q *Queries) GetDomainByName(ctx context.Context, name string) (GetDomainByNameRow, error) {
 	row := q.db.QueryRowContext(ctx, getDomainByName, name)
-	var i Domain
+	var i GetDomainByNameRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -148,17 +181,34 @@ func (q *Queries) GetDomainsCount(ctx context.Context) (int64, error) {
 }
 
 const setDomainStatus = `-- name: SetDomainStatus :exec
-UPDATE domains
-SET status = $1
-WHERE id = $2
+UPDATE domains 
+SET status = $2
+WHERE id = $1
 `
 
 type SetDomainStatusParams struct {
-	Status int32 `json:"status"`
 	ID     int32 `json:"id"`
+	Status int32 `json:"status"`
 }
 
 func (q *Queries) SetDomainStatus(ctx context.Context, arg SetDomainStatusParams) error {
-	_, err := q.db.ExecContext(ctx, setDomainStatus, arg.Status, arg.ID)
+	_, err := q.db.ExecContext(ctx, setDomainStatus, arg.ID, arg.Status)
+	return err
+}
+
+const updateDomain = `-- name: UpdateDomain :exec
+UPDATE domains 
+SET name = $2, provider = $3
+WHERE id = $1
+`
+
+type UpdateDomainParams struct {
+	ID       int32  `json:"id"`
+	Name     string `json:"name"`
+	Provider string `json:"provider"`
+}
+
+func (q *Queries) UpdateDomain(ctx context.Context, arg UpdateDomainParams) error {
+	_, err := q.db.ExecContext(ctx, updateDomain, arg.ID, arg.Name, arg.Provider)
 	return err
 }
