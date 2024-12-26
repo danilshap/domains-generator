@@ -6,7 +6,7 @@ RETURNING *;
 -- name: GetMailboxesByDomain :many
 SELECT id, address, password, domain_id, status, created_at
 FROM mailboxes
-WHERE address = $1;
+WHERE address = $1 AND is_deleted = false;
 
 -- name: GetAllMailboxes :many
 SELECT m.*, d.name as domain_name 
@@ -19,7 +19,7 @@ LIMIT $1 OFFSET $2;
 -- name: GetMailboxesByDomainName :many
 SELECT id, address, status, created_at
 FROM mailboxes
-WHERE domain_id = $1
+WHERE domain_id = $1 AND is_deleted = false
 ORDER BY created_at DESC;
 
 -- name: SetMailboxStatus :exec
@@ -28,14 +28,14 @@ SET status = $1
 WHERE id = $2;
 
 -- name: DeleteMailbox :exec
-DELETE FROM mailboxes
+UPDATE mailboxes 
+SET is_deleted = true 
 WHERE id = $1;
 
 -- name: GetMailboxesByDomainID :many
 SELECT * FROM mailboxes 
-WHERE domain_id = $1
-LIMIT $2
-OFFSET $3;
+WHERE domain_id = $1 AND is_deleted = false
+LIMIT $2 OFFSET $3;
 
 -- name: GetMailboxesCountByDomainID :one
 SELECT COUNT(*) FROM mailboxes 
@@ -78,3 +78,8 @@ SELECT
     COUNT(DISTINCT domain_id) as domains_count
 FROM mailboxes
 WHERE is_deleted = false;
+
+-- name: UpdateMailboxesStatusByDomainID :exec
+UPDATE mailboxes 
+SET status = $1
+WHERE domain_id = $2 AND is_deleted = false;

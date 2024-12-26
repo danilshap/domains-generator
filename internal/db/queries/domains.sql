@@ -4,8 +4,8 @@ VALUES ($1, $2, $3, NOW(), $4)
 RETURNING *;
 
 -- name: GetDomainByID :one
-SELECT * FROM domains
-WHERE id = $1 LIMIT 1;
+SELECT id, name, provider, status, created_at, expires_at, is_deleted, settings FROM domains
+WHERE id = $1 AND is_deleted = false LIMIT 1;
 
 -- name: GetAllDomains :many
 SELECT d.*,
@@ -23,7 +23,7 @@ SELECT COUNT(*) FROM domains;
 -- name: GetDomainByName :one
 SELECT id, name, provider, status, created_at, expires_at, is_deleted
 FROM domains
-WHERE name = $1;
+WHERE name = $1 AND is_deleted = false;
 
 -- name: UpdateDomain :exec
 UPDATE domains 
@@ -36,5 +36,6 @@ SET status = $2
 WHERE id = $1;
 
 -- name: DeleteDomain :exec
-DELETE FROM domains
+UPDATE domains 
+SET is_deleted = true 
 WHERE id = $1;

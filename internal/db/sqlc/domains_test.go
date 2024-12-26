@@ -28,10 +28,10 @@ func TestCreateDomain(t *testing.T) {
 }
 
 func TestGetDomainByName(t *testing.T) {
-	// Сначала создаем домен
+	// First create a domain
 	createdDomain := createRandomDomain(t)
 
-	// Получаем домен по имени
+	// Get domain by name
 	domain, err := testQueries.GetDomainByName(context.Background(), createdDomain.Name)
 	require.NoError(t, err)
 	require.NotEmpty(t, domain)
@@ -44,7 +44,7 @@ func TestGetDomainByName(t *testing.T) {
 }
 
 func TestGetAllDomains(t *testing.T) {
-	// Создаем несколько доменов
+	// Create multiple domains
 	for i := 0; i < 5; i++ {
 		createRandomDomain(t)
 	}
@@ -77,7 +77,7 @@ func TestSetDomainStatus(t *testing.T) {
 	err := testQueries.SetDomainStatus(context.Background(), arg)
 	require.NoError(t, err)
 
-	// Проверяем что статус обновился
+	// Check that status was updated
 	updatedDomain, err := testQueries.GetDomainByName(context.Background(), domain.Name)
 	require.NoError(t, err)
 	require.Equal(t, arg.Status, updatedDomain.Status)
@@ -89,12 +89,94 @@ func TestDeleteDomain(t *testing.T) {
 	err := testQueries.DeleteDomain(context.Background(), domain.ID)
 	require.NoError(t, err)
 
-	// Проверяем что домен удален
+	// Check that domain was soft deleted
 	_, err = testQueries.GetDomainByName(context.Background(), domain.Name)
-	require.Error(t, err) // Должна быть ошибка, так как домен удален
+	require.Error(t, err)
+
+	// Verify that the domain still exists in DB but is marked as deleted
+	var deletedDomain Domain
+	err = testQueries.db.QueryRowContext(context.Background(), `
+		SELECT id, name, provider, status, created_at, expires_at, is_deleted, settings 
+		FROM domains WHERE id = $1
+	`, domain.ID).Scan(
+		&deletedDomain.ID,
+		&deletedDomain.Name,
+		&deletedDomain.Provider,
+		&deletedDomain.Status,
+		&deletedDomain.CreatedAt,
+		&deletedDomain.ExpiresAt,
+		&deletedDomain.IsDeleted,
+		&deletedDomain.Settings,
+	)
+	require.NoError(t, err)
+	require.True(t, deletedDomain.IsDeleted.Bool)
 }
 
-// Вспомогательная функция для создания случайного домена
+func TestUpdateDomainAndMailboxesStatus(t *testing.T) {
+	domain := createRandomDomain(t)
+
+	for i := 0; i < 3; i++ {
+		arg := CreateMailboxParams{
+			Address:  utils.RandomEmail(),
+			Password: utils.RandomString(12),
+			DomainID: domain.ID,
+			Status:   1,
+		}
+		_, err := testQueries.CreateMailbox(context.Background(), arg)
+		require.NoError(t, err)
+	}
+
+	err := testStore.UpdateDomainAndMailboxesStatus(context.Background(), domain.ID, 2)
+	require.NoError(t, err)
+
+	updatedDomain, err := testQueries.GetDomainByID(context.Background(), domain.ID)
+	require.NoError(t, err)
+	require.Equal(t, int32(2), updatedDomain.Status)
+
+	mailboxes, err := testQueries.GetMailboxesByDomainID(context.Background(), GetMailboxesByDomainIDParams{
+		DomainID: domain.ID,
+		Limit:    10,
+		Offset:   0,
+	})
+	require.NoError(t, err)
+	for _, mailbox := range mailboxes {
+		require.Equal(t, int32(2), mailbox.Status)
+	}
+}
+
+func TestGetDomainsWithPagination(t *testing.T) {
+	// Create multiple domains
+	for i := 0; i < 5; i++ {
+		createRandomDomain(t)
+	}
+
+	// Test first page
+	page1, err := testQueries.GetAllDomains(context.Background(), GetAllDomainsParams{
+		Limit:  3,
+		Offset: 0,
+	})
+	require.NoError(t, err)
+	require.Len(t, page1, 3)
+
+	// Test second page
+	page2, err := testQueries.GetAllDomains(context.Background(), GetAllDomainsParams{
+		Limit:  3,
+		Offset: 3,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, page2)
+
+	// Check that IDs are not repeated between pages
+	page1IDs := make(map[int32]bool)
+	for _, domain := range page1 {
+		page1IDs[domain.ID] = true
+	}
+	for _, domain := range page2 {
+		require.False(t, page1IDs[domain.ID])
+	}
+}
+
+// Helper function to create a random domain
 func createRandomDomain(t *testing.T) Domain {
 	arg := CreateDomainParams{
 		Name:     utils.RandomName(),

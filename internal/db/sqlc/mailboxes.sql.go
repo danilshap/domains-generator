@@ -51,7 +51,8 @@ func (q *Queries) CreateMailbox(ctx context.Context, arg CreateMailboxParams) (M
 }
 
 const deleteMailbox = `-- name: DeleteMailbox :exec
-DELETE FROM mailboxes
+UPDATE mailboxes 
+SET is_deleted = true 
 WHERE id = $1
 `
 
@@ -165,7 +166,7 @@ func (q *Queries) GetMailboxCountByDomainID(ctx context.Context, domainID int32)
 const getMailboxesByDomain = `-- name: GetMailboxesByDomain :many
 SELECT id, address, password, domain_id, status, created_at
 FROM mailboxes
-WHERE address = $1
+WHERE address = $1 AND is_deleted = false
 `
 
 type GetMailboxesByDomainRow struct {
@@ -209,9 +210,8 @@ func (q *Queries) GetMailboxesByDomain(ctx context.Context, address string) ([]G
 
 const getMailboxesByDomainID = `-- name: GetMailboxesByDomainID :many
 SELECT id, address, password, domain_id, created_at, status, is_deleted, settings, last_login, last_password_change, password_expires_at FROM mailboxes 
-WHERE domain_id = $1
-LIMIT $2
-OFFSET $3
+WHERE domain_id = $1 AND is_deleted = false
+LIMIT $2 OFFSET $3
 `
 
 type GetMailboxesByDomainIDParams struct {
@@ -258,7 +258,7 @@ func (q *Queries) GetMailboxesByDomainID(ctx context.Context, arg GetMailboxesBy
 const getMailboxesByDomainName = `-- name: GetMailboxesByDomainName :many
 SELECT id, address, status, created_at
 FROM mailboxes
-WHERE domain_id = $1
+WHERE domain_id = $1 AND is_deleted = false
 ORDER BY created_at DESC
 `
 
@@ -457,5 +457,21 @@ type UpdateMailboxParams struct {
 
 func (q *Queries) UpdateMailbox(ctx context.Context, arg UpdateMailboxParams) error {
 	_, err := q.db.ExecContext(ctx, updateMailbox, arg.ID, arg.Address, arg.DomainID)
+	return err
+}
+
+const updateMailboxesStatusByDomainID = `-- name: UpdateMailboxesStatusByDomainID :exec
+UPDATE mailboxes 
+SET status = $1
+WHERE domain_id = $2 AND is_deleted = false
+`
+
+type UpdateMailboxesStatusByDomainIDParams struct {
+	Status   int32 `json:"status"`
+	DomainID int32 `json:"domain_id"`
+}
+
+func (q *Queries) UpdateMailboxesStatusByDomainID(ctx context.Context, arg UpdateMailboxesStatusByDomainIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateMailboxesStatusByDomainID, arg.Status, arg.DomainID)
 	return err
 }

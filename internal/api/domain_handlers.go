@@ -226,7 +226,7 @@ func (s *Server) handleUpdateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Возвращаем обновленный список доменов
+	// Return updated list
 	domainsList, err := s.store.GetAllDomains(r.Context(), db.GetAllDomainsParams{
 		Limit:  pageSize,
 		Offset: 0,
@@ -288,18 +288,13 @@ func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	arg := db.SetDomainStatusParams{
-		ID:     int32(id),
-		Status: int32(status),
-	}
-
-	err = s.store.SetDomainStatus(r.Context(), arg)
+	err = s.store.UpdateDomainAndMailboxesStatus(r.Context(), int32(id), int32(status))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Возвращаем обновленный список
+	// Return updated list
 	domainsList, err := s.store.GetAllDomains(r.Context(), db.GetAllDomainsParams{
 		Limit:  pageSize,
 		Offset: 0,

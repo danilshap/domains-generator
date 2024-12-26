@@ -47,7 +47,8 @@ func (q *Queries) CreateDomain(ctx context.Context, arg CreateDomainParams) (Dom
 }
 
 const deleteDomain = `-- name: DeleteDomain :exec
-DELETE FROM domains
+UPDATE domains 
+SET is_deleted = true 
 WHERE id = $1
 `
 
@@ -119,7 +120,7 @@ func (q *Queries) GetAllDomains(ctx context.Context, arg GetAllDomainsParams) ([
 
 const getDomainByID = `-- name: GetDomainByID :one
 SELECT id, name, provider, status, created_at, expires_at, is_deleted, settings FROM domains
-WHERE id = $1 LIMIT 1
+WHERE id = $1 AND is_deleted = false LIMIT 1
 `
 
 func (q *Queries) GetDomainByID(ctx context.Context, id int32) (Domain, error) {
@@ -141,7 +142,7 @@ func (q *Queries) GetDomainByID(ctx context.Context, id int32) (Domain, error) {
 const getDomainByName = `-- name: GetDomainByName :one
 SELECT id, name, provider, status, created_at, expires_at, is_deleted
 FROM domains
-WHERE name = $1
+WHERE name = $1 AND is_deleted = false
 `
 
 type GetDomainByNameRow struct {

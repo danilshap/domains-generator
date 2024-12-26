@@ -1,7 +1,9 @@
 package db
 
 import (
+	"context"
 	"database/sql"
+	"log"
 )
 
 // Store provides all functions to execute db queries and transactions
@@ -40,4 +42,47 @@ func (store *Store) execTx(fn func(*Queries) error) error {
 // GetDB returns the underlying database connection
 func (store *Store) GetDB() *sql.DB {
 	return store.db
+}
+
+func (store *Store) UpdateDomainAndMailboxesStatus(ctx context.Context, domainID int32, status int32) error {
+	err := store.execTx(func(q *Queries) error {
+		err := q.SetDomainStatus(ctx, SetDomainStatusParams{
+			ID:     domainID,
+			Status: status,
+		})
+		if err != nil {
+			return err
+		}
+
+		if status == 2 {
+			err = q.UpdateMailboxesStatusByDomainID(ctx, UpdateMailboxesStatusByDomainIDParams{
+				Status:   status,
+				DomainID: domainID,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err == nil && status == 2 {
+		go func() {
+			notifyCtx := context.Background()
+			mailboxes, err := store.GetMailboxesByDomainID(notifyCtx, GetMailboxesByDomainIDParams{
+				DomainID: domainID,
+			})
+			if err != nil {
+				log.Printf("Error fetching mailboxes for notifications: %v", err)
+				return
+			}
+
+			for _, mailbox := range mailboxes {
+				log.Printf("Notifying user about mailbox status change: %s", mailbox.Address)
+			}
+		}()
+	}
+
+	return err
 }

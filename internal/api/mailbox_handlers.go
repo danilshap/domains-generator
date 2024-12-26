@@ -115,7 +115,7 @@ func (s *Server) handleCreateMailbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Проверяем что домен активен
+	// Check that domain is active
 	domain, err := s.store.GetDomainByID(r.Context(), int32(domainID))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
