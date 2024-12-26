@@ -1,0 +1,99 @@
+package mailboxes
+
+import "fmt"
+
+templ Pagination(data ListData) {
+	if data.TotalPages > 1 {
+		<nav class="flex items-center justify-between border-t border-gray-200 px-4 sm:px-0">
+			<div class="flex w-0 flex-1">
+				if data.CurrentPage > 1 {
+					<a
+						href={ templ.SafeURL(fmt.Sprintf("/mailboxes?page=%d", data.CurrentPage-1)) }
+						class="inline-flex items-center border-t-2 border-transparent pr-1 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+						hx-get={ fmt.Sprintf("/mailboxes?page=%d", data.CurrentPage-1) }
+						hx-target="#mailboxes-list"
+					>
+						Previous
+					</a>
+				}
+			</div>
+			<div class="hidden md:-mt-px md:flex">
+				@renderPageNumbers(data.CurrentPage, data.TotalPages)
+			</div>
+			<div class="flex w-0 flex-1 justify-end">
+				if data.CurrentPage < data.TotalPages {
+					<a
+						href={ templ.SafeURL(fmt.Sprintf("/mailboxes?page=%d", data.CurrentPage+1)) }
+						class="inline-flex items-center border-t-2 border-transparent pl-1 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+						hx-get={ fmt.Sprintf("/mailboxes?page=%d", data.CurrentPage+1) }
+						hx-target="#mailboxes-list"
+					>
+						Next
+					</a>
+				}
+			</div>
+		</nav>
+	}
+}
+
+templ renderPageNumbers(currentPage int32, totalPages int32) {
+	// Show first page
+	@pageLink(1, currentPage)
+	if totalPages <= 7 {
+		// If total pages <= 7, show all pages
+		for i := int32(2); i < totalPages; i++ {
+			@pageLink(i, currentPage)
+		}
+	} else {
+		// Show pages with ellipsis
+		if currentPage > 3 {
+			<span class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500">...</span>
+		}
+		// Show pages around current page
+		for i := max(2, currentPage-1); i <= min(totalPages-1, currentPage+1); i++ {
+			@pageLink(i, currentPage)
+		}
+		if currentPage < totalPages-2 {
+			<span class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500">...</span>
+		}
+	}
+	// Show last page
+	if totalPages > 1 {
+		@pageLink(totalPages, currentPage)
+	}
+}
+
+templ pageLink(page int32, currentPage int32) {
+	if page == currentPage {
+		<a
+			href={ templ.SafeURL(fmt.Sprintf("/mailboxes?page=%d", page)) }
+			class="inline-flex items-center border-t-2 border-indigo-500 px-4 pt-4 text-sm font-medium text-indigo-600"
+			aria-current="page"
+		>
+			{ fmt.Sprint(page) }
+		</a>
+	} else {
+		<a
+			href={ templ.SafeURL(fmt.Sprintf("/mailboxes?page=%d", page)) }
+			class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+			hx-get={ fmt.Sprintf("/mailboxes?page=%d", page) }
+			hx-target="#mailboxes-list"
+		>
+			{ fmt.Sprint(page) }
+		</a>
+	}
+}
+
+func max(a, b int32) int32 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(a, b int32) int32 {
+	if a < b {
+		return a
+	}
+	return b
+}

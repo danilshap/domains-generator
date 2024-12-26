@@ -83,3 +83,8 @@ WHERE is_deleted = false;
 UPDATE mailboxes 
 SET status = $1
 WHERE domain_id = $2 AND is_deleted = false;
+
+-- name: UpdateMailboxesStatusByID :exec
+UPDATE mailboxes 
+SET status = $1
+WHERE id = $2 AND is_deleted = false;

@@ -29,6 +29,7 @@ type Store interface {
 	DeleteMailbox(ctx context.Context, id int32) error
 	GetMailboxesWithFilters(ctx context.Context, arg GetMailboxesWithFiltersParams) ([]GetMailboxesWithFiltersRow, error)
 	GetMailboxesStats(ctx context.Context) (GetMailboxesStatsRow, error)
+	UpdateMailboxesStatusByID(ctx context.Context, arg UpdateMailboxesStatusByIDParams) error
 }
 
 // SQLStore provides all functions to execute db queries and transactions

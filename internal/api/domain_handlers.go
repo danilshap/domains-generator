@@ -43,6 +43,12 @@ func (s *Server) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	stats, err := s.store.GetMailboxesStats(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	totalPages := (totalCount + pageSize - 1) / pageSize
 	fmt.Println(totalPages)
 
@@ -51,6 +57,7 @@ func (s *Server) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		CurrentPage: int32(page),
 		TotalPages:  int32(totalPages),
 		PageSize:    pageSize,
+		Stats:       stats,
 	}
 
 	if r.Header.Get("HX-Request") == "true" {

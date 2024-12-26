@@ -47,6 +47,15 @@ func TestHandleListDomains(t *testing.T) {
 					GetDomainsCount(gomock.Any()).
 					Times(1).
 					Return(int64(10), nil)
+
+				store.EXPECT().
+					GetMailboxesStats(gomock.Any()).
+					Times(1).
+					Return(db.GetMailboxesStatsRow{
+						ActiveCount:   5,
+						InactiveCount: 3,
+						TotalCount:    10,
+					}, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)

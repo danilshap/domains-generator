@@ -50,6 +50,7 @@ func (s *Server) setupRoutes() {
 		r.Get("/{id}/edit", s.handleEditMailboxForm)
 		r.Put("/{id}", s.handleUpdateMailbox)
 		r.Delete("/{id}", s.handleDeleteMailbox)
+		r.Put("/{id}/status", s.handleUpdateMailboxStatus)
 	})
 }
 

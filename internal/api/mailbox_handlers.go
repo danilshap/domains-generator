@@ -21,36 +21,15 @@ func (s *Server) handleListMailboxes(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var statusFilters []int32
-	if status := r.URL.Query().Get("status"); status != "" {
-		if s, err := strconv.Atoi(status); err == nil {
-			statusFilters = append(statusFilters, int32(s))
-		}
-	}
-
-	var domainFilters []int32
-	if domain := r.URL.Query().Get("domain"); domain != "" {
-		if d, err := strconv.Atoi(domain); err == nil {
-			domainFilters = append(domainFilters, int32(d))
-		}
-	}
-
-	search := r.URL.Query().Get("search")
 	offset := (page - 1) * mailboxPageSize
 
 	mailboxList, err := s.store.GetMailboxesWithFilters(r.Context(), db.GetMailboxesWithFiltersParams{
-		Column1: statusFilters,
-		Column2: domainFilters,
-		Column3: search,
+		Column1: []int32{}, // status filters
+		Column2: []int32{}, // domain filters
+		Column3: "",        // search
 		Limit:   mailboxPageSize,
 		Offset:  int32(offset),
 	})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	stats, err := s.store.GetMailboxesStats(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -69,16 +48,6 @@ func (s *Server) handleListMailboxes(w http.ResponseWriter, r *http.Request) {
 		CurrentPage: int32(page),
 		TotalPages:  int32(totalPages),
 		PageSize:    mailboxPageSize,
-		Stats:       stats,
-		Filters: struct {
-			Status  []int32
-			Domains []int32
-			Search  string
-		}{
-			Status:  statusFilters,
-			Domains: domainFilters,
-			Search:  search,
-		},
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
@@ -139,7 +108,12 @@ func (s *Server) handleCreateMailbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/mailboxes/%d", mailbox.ID), http.StatusSeeOther)
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Trigger", `{"showMessage": "Mailbox created successfully", "closeModal": "true", "refreshMailboxes": "true"}`)
+		w.WriteHeader(http.StatusOK)
+	} else {
+		http.Redirect(w, r, fmt.Sprintf("/mailboxes/%d", mailbox.ID), http.StatusSeeOther)
+	}
 }
 
 func (s *Server) handleMailboxDetails(w http.ResponseWriter, r *http.Request) {
@@ -241,6 +215,42 @@ func (s *Server) handleDeleteMailbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.store.DeleteMailbox(r.Context(), int32(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleUpdateMailboxStatus(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	status, err := strconv.Atoi(r.FormValue("status"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Validate status
+	if status != 1 && status != 2 {
+		http.Error(w, "Invalid status value", http.StatusBadRequest)
+		return
+	}
+
+	err = s.store.UpdateMailboxesStatusByID(r.Context(), db.UpdateMailboxesStatusByIDParams{
+		ID:     int32(id),
+		Status: int32(status),
+	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

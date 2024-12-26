@@ -1,0 +1,29 @@
+package common
+
+templ Nav() {
+	<div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+		<div class="flex h-16 items-center justify-between px-6 border-b border-gray-200">
+			<span class="text-xl font-bold text-gray-900">DM</span>
+			<button type="button" class="p-1.5">
+				<i class="fa-solid fa-circle-user text-gray-400 hover:text-indigo-600 text-xl transition-colors"></i>
+			</button>
+		</div>
+		<nav class="px-4 py-4">
+			<div class="space-y-1">
+				<a href="/domains" class="flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors">
+					<i class="fa-solid fa-globe text-indigo-600 text-lg w-6"></i>
+					<span class="ml-3 text-gray-900">Domains</span>
+				</a>
+				<a href="/mailboxes" class="flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors">
+					<i class="fa-solid fa-envelope text-indigo-600 text-lg w-6"></i>
+					<span class="ml-3 text-gray-900">Mailboxes</span>
+				</a>
+				<div class="border-t border-gray-200 my-4"></div>
+				<a href="/settings" class="flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors">
+					<i class="fa-solid fa-gear text-indigo-600 text-lg w-6"></i>
+					<span class="ml-3 text-gray-900">Settings</span>
+				</a>
+			</div>
+		</nav>
+	</div>
+}

@@ -1,0 +1,22 @@
+package common
+
+templ StatusBadge(status int32) {
+	switch status {
+		case 1:
+			<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+				Active
+			</span>
+		case 2:
+			<span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700 ring-1 ring-inset ring-yellow-600/20">
+				Inactive
+			</span>
+		case 3:
+			<span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">
+				Deleted
+			</span>
+		default:
+			<span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+				Unknown
+			</span>
+	}
+}

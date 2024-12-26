@@ -475,3 +475,19 @@ func (q *Queries) UpdateMailboxesStatusByDomainID(ctx context.Context, arg Updat
 	_, err := q.db.ExecContext(ctx, updateMailboxesStatusByDomainID, arg.Status, arg.DomainID)
 	return err
 }
+
+const updateMailboxesStatusByID = `-- name: UpdateMailboxesStatusByID :exec
+UPDATE mailboxes 
+SET status = $1
+WHERE id = $2 AND is_deleted = false
+`
+
+type UpdateMailboxesStatusByIDParams struct {
+	Status int32 `json:"status"`
+	ID     int32 `json:"id"`
+}
+
+func (q *Queries) UpdateMailboxesStatusByID(ctx context.Context, arg UpdateMailboxesStatusByIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateMailboxesStatusByID, arg.Status, arg.ID)
+	return err
+}
