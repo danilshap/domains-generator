@@ -9,11 +9,11 @@ import (
 )
 
 type Server struct {
-	store  *db.Store
+	store  db.Store
 	router *chi.Mux
 }
 
-func NewServer(store *db.Store) (*Server, error) {
+func NewServer(store db.Store) (*Server, error) {
 	server := &Server{
 		store:  store,
 		router: chi.NewRouter(),

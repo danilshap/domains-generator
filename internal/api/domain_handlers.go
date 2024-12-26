@@ -107,7 +107,7 @@ func (s *Server) handleDeleteDomain(w http.ResponseWriter, r *http.Request) {
 
 	err = s.store.DeleteDomain(r.Context(), int32(id))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -226,7 +226,7 @@ func (s *Server) handleUpdateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return updated list
+	// Return updated list of domains
 	domainsList, err := s.store.GetAllDomains(r.Context(), db.GetAllDomainsParams{
 		Limit:  pageSize,
 		Offset: 0,
@@ -294,7 +294,7 @@ func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return updated list
+	// Return updated list of domains
 	domainsList, err := s.store.GetAllDomains(r.Context(), db.GetAllDomainsParams{
 		Limit:  pageSize,
 		Offset: 0,

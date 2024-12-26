@@ -35,4 +35,7 @@ deps:
 .PHONY: generate
 generate: deps templ
 
-.PHONY: postgres createdb dropdb migrateup migrateup_last migratedown migratedown_last sqlc test server
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mock
+
+mock:
+	mockgen -package mockdb -destination internal/db/mock/store.go github.com/danilshap/domains-generator/internal/db/sqlc Store

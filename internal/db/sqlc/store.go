@@ -6,22 +6,47 @@ import (
 	"log"
 )
 
-// Store provides all functions to execute db queries and transactions
-type Store struct {
+type Store interface {
+	CreateDomain(ctx context.Context, arg CreateDomainParams) (Domain, error)
+	GetDomainByID(ctx context.Context, id int32) (Domain, error)
+	GetAllDomains(ctx context.Context, arg GetAllDomainsParams) ([]GetAllDomainsRow, error)
+	GetDomainByName(ctx context.Context, name string) (GetDomainByNameRow, error)
+	GetDomainsCount(ctx context.Context) (int64, error)
+	UpdateDomain(ctx context.Context, arg UpdateDomainParams) error
+	SetDomainStatus(ctx context.Context, arg SetDomainStatusParams) error
+	DeleteDomain(ctx context.Context, id int32) error
+	UpdateDomainAndMailboxesStatus(ctx context.Context, domainID int32, status int32) error
+
+	CreateMailbox(ctx context.Context, arg CreateMailboxParams) (Mailbox, error)
+	GetMailboxByID(ctx context.Context, id int32) (Mailbox, error)
+	GetAllMailboxes(ctx context.Context, arg GetAllMailboxesParams) ([]GetAllMailboxesRow, error)
+	GetMailboxesByDomain(ctx context.Context, address string) ([]GetMailboxesByDomainRow, error)
+	GetMailboxesByDomainID(ctx context.Context, arg GetMailboxesByDomainIDParams) ([]Mailbox, error)
+	GetMailboxesCountByDomainID(ctx context.Context, domainID int32) (int64, error)
+	GetMailboxesCount(ctx context.Context) (int64, error)
+	UpdateMailbox(ctx context.Context, arg UpdateMailboxParams) error
+	SetMailboxStatus(ctx context.Context, arg SetMailboxStatusParams) error
+	DeleteMailbox(ctx context.Context, id int32) error
+	GetMailboxesWithFilters(ctx context.Context, arg GetMailboxesWithFiltersParams) ([]GetMailboxesWithFiltersRow, error)
+	GetMailboxesStats(ctx context.Context) (GetMailboxesStatsRow, error)
+}
+
+// SQLStore provides all functions to execute db queries and transactions
+type SQLStore struct {
 	*Queries
 	db *sql.DB
 }
 
 // NewStore creates a new store
-func NewStore(db *sql.DB) *Store {
-	return &Store{
+func NewStore(db *sql.DB) Store {
+	return &SQLStore{
 		db:      db,
 		Queries: New(db),
 	}
 }
 
 // ExecTx executes a function within a database transaction
-func (store *Store) execTx(fn func(*Queries) error) error {
+func (store *SQLStore) execTx(fn func(*Queries) error) error {
 	tx, err := store.db.Begin()
 	if err != nil {
 		return err
@@ -40,11 +65,11 @@ func (store *Store) execTx(fn func(*Queries) error) error {
 }
 
 // GetDB returns the underlying database connection
-func (store *Store) GetDB() *sql.DB {
+func (store *SQLStore) GetDB() *sql.DB {
 	return store.db
 }
 
-func (store *Store) UpdateDomainAndMailboxesStatus(ctx context.Context, domainID int32, status int32) error {
+func (store *SQLStore) UpdateDomainAndMailboxesStatus(ctx context.Context, domainID int32, status int32) error {
 	err := store.execTx(func(q *Queries) error {
 		err := q.SetDomainStatus(ctx, SetDomainStatusParams{
 			ID:     domainID,

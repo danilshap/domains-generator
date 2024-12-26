@@ -92,7 +92,7 @@ func (s *Server) handleListMailboxes(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleNewMailboxForm(w http.ResponseWriter, r *http.Request) {
 	domains, err := s.store.GetAllDomains(r.Context(), db.GetAllDomainsParams{
-		Limit:  100, // Предполагаем, что доменов не очень много
+		Limit:  100, // Assuming there aren't too many domains
 		Offset: 0,
 	})
 	if err != nil {
@@ -146,6 +146,11 @@ func (s *Server) handleMailboxDetails(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if id <= 0 {
+		http.Error(w, "Invalid mailbox ID", http.StatusBadRequest)
 		return
 	}
 
