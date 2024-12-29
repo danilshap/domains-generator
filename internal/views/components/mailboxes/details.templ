@@ -8,7 +8,7 @@ import (
 
 type DetailsData struct {
 	Mailbox db.Mailbox
-	Domain  db.Domain
+	Domain  db.GetDomainByIDRow
 }
 
 templ Details(data DetailsData) {

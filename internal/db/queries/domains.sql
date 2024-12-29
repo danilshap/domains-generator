@@ -39,3 +39,16 @@ WHERE id = $1;
 UPDATE domains 
 SET is_deleted = true 
 WHERE id = $1;
+
+-- name: GetDomainsByUserID :many
+SELECT * FROM domains
+WHERE user_id = $1
+ORDER BY id
+LIMIT $2
+OFFSET $3;
+
+-- name: GetUserByDomainID :one
+SELECT u.* FROM users u
+JOIN domains d ON d.user_id = u.id
+WHERE d.id = $1 AND u.is_active = true
+LIMIT 1;

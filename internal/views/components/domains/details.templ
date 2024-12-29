@@ -6,14 +6,14 @@ import (
 )
 
 type DomainDetailsData struct {
-	Domain      db.Domain
+	Domain      db.GetDomainByIDRow
 	Mailboxes   []db.Mailbox
 	CurrentPage int32
 	TotalPages  int32
 	PageSize    int32
 }
 
-templ domainHeader(domain db.Domain) {
+templ domainHeader(domain db.GetDomainByIDRow) {
 	<div class="border-b border-gray-200 pb-5">
 		<div class="flex justify-between items-center">
 			<div>
@@ -64,7 +64,7 @@ templ domainHeader(domain db.Domain) {
 	</div>
 }
 
-templ domainInfo(domain db.Domain) {
+templ domainInfo(domain db.GetDomainByIDRow) {
 	<div class="border-r border-gray-200 pr-6">
 		<h4 class="text-base font-semibold leading-7 text-gray-900">General Information</h4>
 		<dl class="mt-4 space-y-4">
@@ -84,7 +84,7 @@ templ domainInfo(domain db.Domain) {
 	</div>
 }
 
-templ dnsConfig(domain db.Domain) {
+templ dnsConfig(domain db.GetDomainByIDRow) {
 	<div class="pl-6">
 		<h4 class="text-base font-semibold leading-7 text-gray-900">DNS Configuration</h4>
 		<dl class="mt-4 space-y-4">

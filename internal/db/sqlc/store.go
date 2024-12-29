@@ -8,7 +8,7 @@ import (
 
 type Store interface {
 	CreateDomain(ctx context.Context, arg CreateDomainParams) (Domain, error)
-	GetDomainByID(ctx context.Context, id int32) (Domain, error)
+	GetDomainByID(ctx context.Context, id int32) (GetDomainByIDRow, error)
 	GetAllDomains(ctx context.Context, arg GetAllDomainsParams) ([]GetAllDomainsRow, error)
 	GetDomainByName(ctx context.Context, name string) (GetDomainByNameRow, error)
 	GetDomainsCount(ctx context.Context) (int64, error)
@@ -30,6 +30,24 @@ type Store interface {
 	GetMailboxesWithFilters(ctx context.Context, arg GetMailboxesWithFiltersParams) ([]GetMailboxesWithFiltersRow, error)
 	GetMailboxesStats(ctx context.Context) (GetMailboxesStatsRow, error)
 	UpdateMailboxesStatusByID(ctx context.Context, arg UpdateMailboxesStatusByIDParams) error
+
+	GetDomainsByUserID(ctx context.Context, arg GetDomainsByUserIDParams) ([]Domain, error)
+	GetUserByDomainID(ctx context.Context, id int32) (User, error)
+
+	GetMailboxesByUserID(ctx context.Context, arg GetMailboxesByUserIDParams) ([]Mailbox, error)
+	GetUserByMailboxID(ctx context.Context, id int32) (User, error)
+
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetUserByID(ctx context.Context, id int32) (User, error)
+	GetUserByEmail(ctx context.Context, email string) (User, error)
+	GetUserByUsername(ctx context.Context, username string) (User, error)
+	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
+	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	DeactivateUser(ctx context.Context, id int32) error
+	DeleteUser(ctx context.Context, id int32) error
+	GetUserStats(ctx context.Context, id int32) (GetUserStatsRow, error)
+	VerifyUserCredentials(ctx context.Context, email string) (User, error)
 }
 
 // SQLStore provides all functions to execute db queries and transactions

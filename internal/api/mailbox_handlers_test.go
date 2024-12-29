@@ -35,11 +35,6 @@ func TestHandleListMailboxes(t *testing.T) {
 					GetMailboxesCount(gomock.Any()).
 					Times(1).
 					Return(int64(10), nil)
-
-				store.EXPECT().
-					GetMailboxesStats(gomock.Any()).
-					Times(1).
-					Return(db.GetMailboxesStatsRow{}, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -58,11 +53,6 @@ func TestHandleListMailboxes(t *testing.T) {
 					GetMailboxesCount(gomock.Any()).
 					Times(1).
 					Return(int64(10), nil)
-
-				store.EXPECT().
-					GetMailboxesStats(gomock.Any()).
-					Times(1).
-					Return(db.GetMailboxesStatsRow{}, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -121,7 +111,7 @@ func TestHandleMailboxDetails(t *testing.T) {
 				store.EXPECT().
 					GetDomainByID(gomock.Any(), gomock.Eq(mailbox.DomainID)).
 					Times(1).
-					Return(db.Domain{
+					Return(db.GetDomainByIDRow{
 						ID:       mailbox.DomainID,
 						Name:     "test.com",
 						Provider: "test",

@@ -14,14 +14,14 @@ import (
 )
 
 type DomainDetailsData struct {
-	Domain      db.Domain
+	Domain      db.GetDomainByIDRow
 	Mailboxes   []db.Mailbox
 	CurrentPage int32
 	TotalPages  int32
 	PageSize    int32
 }
 
-func domainHeader(domain db.Domain) templ.Component {
+func domainHeader(domain db.GetDomainByIDRow) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -151,7 +151,7 @@ func domainHeader(domain db.Domain) templ.Component {
 	})
 }
 
-func domainInfo(domain db.Domain) templ.Component {
+func domainInfo(domain db.GetDomainByIDRow) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -219,7 +219,7 @@ func domainInfo(domain db.Domain) templ.Component {
 	})
 }
 
-func dnsConfig(domain db.Domain) templ.Component {
+func dnsConfig(domain db.GetDomainByIDRow) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

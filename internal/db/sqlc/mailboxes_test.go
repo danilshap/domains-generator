@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/danilshap/domains-generator/pkg/utils"
@@ -32,8 +33,9 @@ func TestCreateMailbox(t *testing.T) {
 
 func TestGetAllMailboxes(t *testing.T) {
 	// Create multiple mailboxes
+	domain := createRandomDomain(t)
 	for i := 0; i < 5; i++ {
-		createRandomMailbox(t)
+		createRandomMailbox(t, domain)
 	}
 
 	mailboxes, err := testQueries.GetAllMailboxes(context.Background(), GetAllMailboxesParams{
@@ -53,7 +55,7 @@ func TestGetAllMailboxes(t *testing.T) {
 }
 
 func TestGetMailboxesByDomain(t *testing.T) {
-	mailbox1 := createRandomMailbox(t)
+	mailbox1 := createRandomMailbox(t, createRandomDomain(t))
 
 	mailboxes, err := testQueries.GetMailboxesByDomain(context.Background(), mailbox1.Address)
 	require.NoError(t, err)
@@ -68,7 +70,7 @@ func TestGetMailboxesByDomain(t *testing.T) {
 }
 
 func TestGetMailboxesByDomainName(t *testing.T) {
-	mailbox1 := createRandomMailbox(t)
+	mailbox1 := createRandomMailbox(t, createRandomDomain(t))
 
 	mailboxes, err := testQueries.GetMailboxesByDomainName(context.Background(), mailbox1.DomainID)
 	require.NoError(t, err)
@@ -86,7 +88,7 @@ func TestGetMailboxesByDomainName(t *testing.T) {
 }
 
 func TestSetMailboxStatus(t *testing.T) {
-	mailbox1 := createRandomMailbox(t)
+	mailbox1 := createRandomMailbox(t, createRandomDomain(t))
 
 	arg := SetMailboxStatusParams{
 		ID:     mailbox1.ID,
@@ -104,7 +106,7 @@ func TestSetMailboxStatus(t *testing.T) {
 }
 
 func TestDeleteMailbox(t *testing.T) {
-	mailbox1 := createRandomMailbox(t)
+	mailbox1 := createRandomMailbox(t, createRandomDomain(t))
 
 	err := testQueries.DeleteMailbox(context.Background(), mailbox1.ID)
 	require.NoError(t, err)
@@ -206,9 +208,7 @@ func createMailboxWithStatus(t *testing.T, domainID int32, status int32) Mailbox
 }
 
 // Helper function to create a random mailbox
-func createRandomMailbox(t *testing.T) Mailbox {
-	domain := createRandomDomain(t)
-
+func createRandomMailbox(t *testing.T, domain Domain) Mailbox {
 	arg := CreateMailboxParams{
 		Address:  utils.RandomEmail(),
 		Password: utils.RandomString(12),
@@ -221,4 +221,36 @@ func createRandomMailbox(t *testing.T) Mailbox {
 	require.NotEmpty(t, mailbox)
 
 	return mailbox
+}
+
+func TestGetMailboxesByUserID(t *testing.T) {
+	user := createRandomUser(t)
+	domain := createRandomDomain(t)
+
+	// Create some mailboxes for the user
+	for i := 0; i < 5; i++ {
+		mailbox := createRandomMailbox(t, domain)
+		err := testStore.UpdateMailbox(context.Background(), UpdateMailboxParams{
+			ID:       mailbox.ID,
+			DomainID: domain.ID,
+			Address:  utils.RandomEmail(),
+			UserID:   sql.NullInt32{Int32: user.ID, Valid: true},
+		})
+		require.NoError(t, err)
+	}
+
+	arg := GetMailboxesByUserIDParams{
+		UserID: sql.NullInt32{Int32: user.ID, Valid: true},
+		Limit:  3,
+		Offset: 0,
+	}
+
+	mailboxes, err := testStore.GetMailboxesByUserID(context.Background(), arg)
+	require.NoError(t, err)
+	require.Len(t, mailboxes, 3)
+
+	for _, mailbox := range mailboxes {
+		require.NotEmpty(t, mailbox)
+		require.Equal(t, user.ID, mailbox.UserID.Int32)
+	}
 }

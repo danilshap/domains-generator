@@ -74,6 +74,15 @@ func TestHandleListDomains(t *testing.T) {
 					GetDomainsCount(gomock.Any()).
 					Times(1).
 					Return(int64(10), nil)
+
+				store.EXPECT().
+					GetMailboxesStats(gomock.Any()).
+					Times(1).
+					Return(db.GetMailboxesStatsRow{
+						ActiveCount:   5,
+						InactiveCount: 3,
+						TotalCount:    10,
+					}, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -213,7 +222,7 @@ func TestHandleDeleteDomain(t *testing.T) {
 }
 
 func TestHandleDomainDetails(t *testing.T) {
-	domain := db.Domain{
+	domain := db.GetDomainByIDRow{
 		ID:       1,
 		Name:     "test.com",
 		Provider: "test",
@@ -277,7 +286,7 @@ func TestHandleDomainDetails(t *testing.T) {
 }
 
 func TestHandleEditDomainForm(t *testing.T) {
-	domain := db.Domain{
+	domain := db.GetDomainByIDRow{
 		ID:       1,
 		Name:     "test.com",
 		Provider: "test",
@@ -406,7 +415,7 @@ func TestHandleUpdateDomain(t *testing.T) {
 }
 
 func TestHandleStatusForm(t *testing.T) {
-	domain := db.Domain{
+	domain := db.GetDomainByIDRow{
 		ID:     1,
 		Status: 1,
 	}

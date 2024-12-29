@@ -16,7 +16,7 @@ import (
 
 type DetailsData struct {
 	Mailbox db.Mailbox
-	Domain  db.Domain
+	Domain  db.GetDomainByIDRow
 }
 
 func Details(data DetailsData) templ.Component {

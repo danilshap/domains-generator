@@ -6,6 +6,7 @@ package db
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/sqlc-dev/pqtype"
 )
@@ -19,6 +20,7 @@ type Domain struct {
 	ExpiresAt sql.NullTime          `json:"expires_at"`
 	IsDeleted sql.NullBool          `json:"is_deleted"`
 	Settings  pqtype.NullRawMessage `json:"settings"`
+	UserID    sql.NullInt32         `json:"user_id"`
 }
 
 type Mailbox struct {
@@ -33,4 +35,17 @@ type Mailbox struct {
 	LastLogin          sql.NullTime          `json:"last_login"`
 	LastPasswordChange sql.NullTime          `json:"last_password_change"`
 	PasswordExpiresAt  sql.NullTime          `json:"password_expires_at"`
+	UserID             sql.NullInt32         `json:"user_id"`
+}
+
+type User struct {
+	ID             int32          `json:"id"`
+	Username       string         `json:"username"`
+	Email          string         `json:"email"`
+	HashedPassword string         `json:"hashed_password"`
+	FullName       sql.NullString `json:"full_name"`
+	Role           string         `json:"role"`
+	IsActive       bool           `json:"is_active"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
 }

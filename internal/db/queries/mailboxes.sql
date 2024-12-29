@@ -56,7 +56,7 @@ LIMIT 1;
 
 -- name: UpdateMailbox :exec
 UPDATE mailboxes
-SET address = $2, domain_id = $3
+SET address = $2, domain_id = $3, user_id = $4
 WHERE id = $1;
 
 -- name: GetMailboxesWithFilters :many
@@ -88,3 +88,16 @@ WHERE domain_id = $2 AND is_deleted = false;
 UPDATE mailboxes 
 SET status = $1
 WHERE id = $2 AND is_deleted = false;
+
+-- name: GetMailboxesByUserID :many
+SELECT * FROM mailboxes
+WHERE user_id = $1
+ORDER BY id
+LIMIT $2
+OFFSET $3;
+
+-- name: GetUserByMailboxID :one
+SELECT u.* FROM users u
+JOIN mailboxes m ON m.user_id = u.id
+WHERE m.id = $1 AND u.is_active = true
+LIMIT 1;
