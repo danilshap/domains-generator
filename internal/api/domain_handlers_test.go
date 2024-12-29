@@ -16,7 +16,7 @@ import (
 )
 
 func TestHandleHome(t *testing.T) {
-	server, err := NewServer(nil)
+	server, err := NewServer(nil, nil)
 	require.NoError(t, err)
 
 	recorder := httptest.NewRecorder()
@@ -44,12 +44,12 @@ func TestHandleListDomains(t *testing.T) {
 					Return([]db.GetAllDomainsRow{}, nil)
 
 				store.EXPECT().
-					GetDomainsCount(gomock.Any()).
+					GetDomainsCount(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(int64(10), nil)
 
 				store.EXPECT().
-					GetMailboxesStats(gomock.Any()).
+					GetMailboxesStats(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(db.GetMailboxesStatsRow{
 						ActiveCount:   5,
@@ -71,12 +71,12 @@ func TestHandleListDomains(t *testing.T) {
 					Return([]db.GetAllDomainsRow{}, nil)
 
 				store.EXPECT().
-					GetDomainsCount(gomock.Any()).
+					GetDomainsCount(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(int64(10), nil)
 
 				store.EXPECT().
-					GetMailboxesStats(gomock.Any()).
+					GetMailboxesStats(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(db.GetMailboxesStatsRow{
 						ActiveCount:   5,
@@ -100,7 +100,7 @@ func TestHandleListDomains(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 
@@ -116,7 +116,7 @@ func TestHandleListDomains(t *testing.T) {
 }
 
 func TestHandleNewDomainForm(t *testing.T) {
-	server, err := NewServer(nil)
+	server, err := NewServer(nil, nil)
 	require.NoError(t, err)
 
 	recorder := httptest.NewRecorder()
@@ -208,7 +208,7 @@ func TestHandleDeleteDomain(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 
@@ -270,7 +270,7 @@ func TestHandleDomainDetails(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 
@@ -324,7 +324,7 @@ func TestHandleEditDomainForm(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 
@@ -377,7 +377,7 @@ func TestHandleUpdateDomain(t *testing.T) {
 					Return([]db.GetAllDomainsRow{}, nil)
 
 				store.EXPECT().
-					GetDomainsCount(gomock.Any()).
+					GetDomainsCount(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(int64(0), nil)
 			},
@@ -398,7 +398,7 @@ func TestHandleUpdateDomain(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 
@@ -451,7 +451,7 @@ func TestHandleStatusForm(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 
@@ -523,7 +523,7 @@ func TestHandleCreateDomains(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 
@@ -569,7 +569,7 @@ func TestHandleUpdateStatus(t *testing.T) {
 					Return([]db.GetAllDomainsRow{}, nil)
 
 				store.EXPECT().
-					GetDomainsCount(gomock.Any()).
+					GetDomainsCount(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(int64(0), nil)
 			},
@@ -626,7 +626,7 @@ func TestHandleUpdateStatus(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 

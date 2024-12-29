@@ -59,11 +59,10 @@ func (q *Queries) DeleteDomain(ctx context.Context, id int32) error {
 }
 
 const getAllDomains = `-- name: GetAllDomains :many
-SELECT d.id, d.name, d.provider, d.status, d.created_at, d.expires_at, d.is_deleted, d.settings, d.user_id,
-       COUNT(m.id) FILTER (WHERE m.is_deleted = false) as mailbox_count
+SELECT d.id, d.name, d.provider, d.status, d.created_at, d.expires_at, d.is_deleted, d.settings, d.user_id, COUNT(m.id) as mailboxes_count 
 FROM domains d
-LEFT JOIN mailboxes m ON d.id = m.domain_id
-WHERE d.is_deleted = false
+LEFT JOIN mailboxes m ON d.id = m.domain_id AND m.is_deleted = false
+WHERE d.is_deleted = false AND d.user_id = $3
 GROUP BY d.id
 ORDER BY d.created_at DESC
 LIMIT $1 OFFSET $2
@@ -72,23 +71,24 @@ LIMIT $1 OFFSET $2
 type GetAllDomainsParams struct {
 	Limit  int32 `json:"limit"`
 	Offset int32 `json:"offset"`
+	UserID int32 `json:"user_id"`
 }
 
 type GetAllDomainsRow struct {
-	ID           int32                 `json:"id"`
-	Name         string                `json:"name"`
-	Provider     string                `json:"provider"`
-	Status       int32                 `json:"status"`
-	CreatedAt    sql.NullTime          `json:"created_at"`
-	ExpiresAt    sql.NullTime          `json:"expires_at"`
-	IsDeleted    sql.NullBool          `json:"is_deleted"`
-	Settings     pqtype.NullRawMessage `json:"settings"`
-	UserID       sql.NullInt32         `json:"user_id"`
-	MailboxCount int64                 `json:"mailbox_count"`
+	ID             int32                 `json:"id"`
+	Name           string                `json:"name"`
+	Provider       string                `json:"provider"`
+	Status         int32                 `json:"status"`
+	CreatedAt      sql.NullTime          `json:"created_at"`
+	ExpiresAt      sql.NullTime          `json:"expires_at"`
+	IsDeleted      sql.NullBool          `json:"is_deleted"`
+	Settings       pqtype.NullRawMessage `json:"settings"`
+	UserID         int32                 `json:"user_id"`
+	MailboxesCount int64                 `json:"mailboxes_count"`
 }
 
 func (q *Queries) GetAllDomains(ctx context.Context, arg GetAllDomainsParams) ([]GetAllDomainsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllDomains, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, getAllDomains, arg.Limit, arg.Offset, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (q *Queries) GetAllDomains(ctx context.Context, arg GetAllDomainsParams) ([
 			&i.IsDeleted,
 			&i.Settings,
 			&i.UserID,
-			&i.MailboxCount,
+			&i.MailboxesCount,
 		); err != nil {
 			return nil, err
 		}
@@ -193,9 +193,9 @@ OFFSET $3
 `
 
 type GetDomainsByUserIDParams struct {
-	UserID sql.NullInt32 `json:"user_id"`
-	Limit  int32         `json:"limit"`
-	Offset int32         `json:"offset"`
+	UserID int32 `json:"user_id"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) GetDomainsByUserID(ctx context.Context, arg GetDomainsByUserIDParams) ([]Domain, error) {
@@ -233,10 +233,11 @@ func (q *Queries) GetDomainsByUserID(ctx context.Context, arg GetDomainsByUserID
 
 const getDomainsCount = `-- name: GetDomainsCount :one
 SELECT COUNT(*) FROM domains
+WHERE is_deleted = false AND user_id = $1
 `
 
-func (q *Queries) GetDomainsCount(ctx context.Context) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getDomainsCount)
+func (q *Queries) GetDomainsCount(ctx context.Context, userID int32) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getDomainsCount, userID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err

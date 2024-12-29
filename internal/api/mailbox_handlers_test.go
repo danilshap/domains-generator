@@ -32,7 +32,7 @@ func TestHandleListMailboxes(t *testing.T) {
 					Return([]db.GetMailboxesWithFiltersRow{}, nil)
 
 				store.EXPECT().
-					GetMailboxesCount(gomock.Any()).
+					GetMailboxesCount(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(int64(10), nil)
 			},
@@ -50,7 +50,7 @@ func TestHandleListMailboxes(t *testing.T) {
 					Return([]db.GetMailboxesWithFiltersRow{}, nil)
 
 				store.EXPECT().
-					GetMailboxesCount(gomock.Any()).
+					GetMailboxesCount(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(int64(10), nil)
 			},
@@ -70,7 +70,7 @@ func TestHandleListMailboxes(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 
@@ -157,7 +157,7 @@ func TestHandleMailboxDetails(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 
@@ -215,7 +215,7 @@ func TestHandleEditMailboxForm(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 
@@ -277,7 +277,7 @@ func TestHandleUpdateMailbox(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 
@@ -346,7 +346,7 @@ func TestHandleDeleteMailbox(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store)
+			server, err := NewServer(store, nil)
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 

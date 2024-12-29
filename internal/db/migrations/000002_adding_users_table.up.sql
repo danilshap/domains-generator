@@ -16,8 +16,8 @@ CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_role ON users(role);
 
 -- Add relationships with existing tables
-ALTER TABLE "domains" ADD COLUMN "user_id" INTEGER REFERENCES "users"(id) ON DELETE CASCADE;
-ALTER TABLE "mailboxes" ADD COLUMN "user_id" INTEGER REFERENCES "users"(id) ON DELETE CASCADE;
+ALTER TABLE "domains" ADD COLUMN "user_id" INTEGER NOT NULL REFERENCES "users"(id) ON DELETE CASCADE;
+ALTER TABLE "mailboxes" ADD COLUMN "user_id" INTEGER NOT NULL REFERENCES "users"(id) ON DELETE CASCADE;
 
 -- Indexes for foreign keys
 CREATE INDEX idx_domains_user_id ON domains(user_id);

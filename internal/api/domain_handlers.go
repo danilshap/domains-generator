@@ -19,6 +19,12 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleListDomains(w http.ResponseWriter, r *http.Request) {
+	user, err := getCurrentUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	page := 1
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
 		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
@@ -37,13 +43,13 @@ func (s *Server) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	totalCount, err := s.store.GetDomainsCount(r.Context())
+	totalCount, err := s.store.GetDomainsCount(r.Context(), user.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	stats, err := s.store.GetMailboxesStats(r.Context())
+	stats, err := s.store.GetMailboxesStats(r.Context(), user.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -210,6 +216,12 @@ func (s *Server) handleEditDomainForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUpdateDomain(w http.ResponseWriter, r *http.Request) {
+	user, err := getCurrentUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -243,7 +255,7 @@ func (s *Server) handleUpdateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	totalCount, err := s.store.GetDomainsCount(r.Context())
+	totalCount, err := s.store.GetDomainsCount(r.Context(), user.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -278,6 +290,12 @@ func (s *Server) handleStatusForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
+	user, err := getCurrentUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -311,7 +329,7 @@ func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	totalCount, err := s.store.GetDomainsCount(r.Context())
+	totalCount, err := s.store.GetDomainsCount(r.Context(), user.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

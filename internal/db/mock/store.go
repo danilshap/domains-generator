@@ -212,18 +212,18 @@ func (mr *MockStoreMockRecorder) GetDomainsByUserID(arg0, arg1 interface{}) *gom
 }
 
 // GetDomainsCount mocks base method.
-func (m *MockStore) GetDomainsCount(arg0 context.Context) (int64, error) {
+func (m *MockStore) GetDomainsCount(arg0 context.Context, arg1 int32) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDomainsCount", arg0)
+	ret := m.ctrl.Call(m, "GetDomainsCount", arg0, arg1)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetDomainsCount indicates an expected call of GetDomainsCount.
-func (mr *MockStoreMockRecorder) GetDomainsCount(arg0 interface{}) *gomock.Call {
+func (mr *MockStoreMockRecorder) GetDomainsCount(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDomainsCount", reflect.TypeOf((*MockStore)(nil).GetDomainsCount), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDomainsCount", reflect.TypeOf((*MockStore)(nil).GetDomainsCount), arg0, arg1)
 }
 
 // GetMailboxByID mocks base method.
@@ -287,18 +287,18 @@ func (mr *MockStoreMockRecorder) GetMailboxesByUserID(arg0, arg1 interface{}) *g
 }
 
 // GetMailboxesCount mocks base method.
-func (m *MockStore) GetMailboxesCount(arg0 context.Context) (int64, error) {
+func (m *MockStore) GetMailboxesCount(arg0 context.Context, arg1 int32) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMailboxesCount", arg0)
+	ret := m.ctrl.Call(m, "GetMailboxesCount", arg0, arg1)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetMailboxesCount indicates an expected call of GetMailboxesCount.
-func (mr *MockStoreMockRecorder) GetMailboxesCount(arg0 interface{}) *gomock.Call {
+func (mr *MockStoreMockRecorder) GetMailboxesCount(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMailboxesCount", reflect.TypeOf((*MockStore)(nil).GetMailboxesCount), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMailboxesCount", reflect.TypeOf((*MockStore)(nil).GetMailboxesCount), arg0, arg1)
 }
 
 // GetMailboxesCountByDomainID mocks base method.
@@ -317,18 +317,18 @@ func (mr *MockStoreMockRecorder) GetMailboxesCountByDomainID(arg0, arg1 interfac
 }
 
 // GetMailboxesStats mocks base method.
-func (m *MockStore) GetMailboxesStats(arg0 context.Context) (db.GetMailboxesStatsRow, error) {
+func (m *MockStore) GetMailboxesStats(arg0 context.Context, arg1 int32) (db.GetMailboxesStatsRow, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMailboxesStats", arg0)
+	ret := m.ctrl.Call(m, "GetMailboxesStats", arg0, arg1)
 	ret0, _ := ret[0].(db.GetMailboxesStatsRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetMailboxesStats indicates an expected call of GetMailboxesStats.
-func (mr *MockStoreMockRecorder) GetMailboxesStats(arg0 interface{}) *gomock.Call {
+func (mr *MockStoreMockRecorder) GetMailboxesStats(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMailboxesStats", reflect.TypeOf((*MockStore)(nil).GetMailboxesStats), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMailboxesStats", reflect.TypeOf((*MockStore)(nil).GetMailboxesStats), arg0, arg1)
 }
 
 // GetMailboxesWithFilters mocks base method.

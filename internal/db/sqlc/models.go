@@ -20,7 +20,7 @@ type Domain struct {
 	ExpiresAt sql.NullTime          `json:"expires_at"`
 	IsDeleted sql.NullBool          `json:"is_deleted"`
 	Settings  pqtype.NullRawMessage `json:"settings"`
-	UserID    sql.NullInt32         `json:"user_id"`
+	UserID    int32                 `json:"user_id"`
 }
 
 type Mailbox struct {
@@ -35,7 +35,7 @@ type Mailbox struct {
 	LastLogin          sql.NullTime          `json:"last_login"`
 	LastPasswordChange sql.NullTime          `json:"last_password_change"`
 	PasswordExpiresAt  sql.NullTime          `json:"password_expires_at"`
-	UserID             sql.NullInt32         `json:"user_id"`
+	UserID             int32                 `json:"user_id"`
 }
 
 type User struct {

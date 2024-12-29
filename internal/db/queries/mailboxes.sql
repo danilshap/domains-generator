@@ -1,7 +1,17 @@
 -- name: CreateMailbox :one
-INSERT INTO mailboxes (address, password, domain_id, created_at, status)
-VALUES ($1, $2, $3, NOW(), $4)
-RETURNING *;
+INSERT INTO mailboxes (
+    address, 
+    password, 
+    domain_id, 
+    user_id,
+    created_at, 
+    status
+) VALUES (
+    $1, $2, $3, 
+    $4,
+    NOW(), 
+    $5
+) RETURNING *;
 
 -- name: GetMailboxesByDomain :many
 SELECT id, address, password, domain_id, status, created_at
@@ -47,7 +57,7 @@ WHERE domain_id = $1 AND is_deleted = false;
 
 -- name: GetMailboxesCount :one
 SELECT COUNT(*) FROM mailboxes
-WHERE is_deleted = false;
+WHERE is_deleted = false AND user_id = $1;
 
 -- name: GetMailboxByID :one
 SELECT * FROM mailboxes
@@ -64,11 +74,12 @@ SELECT m.*, d.name as domain_name
 FROM mailboxes m
 LEFT JOIN domains d ON m.domain_id = d.id
 WHERE m.is_deleted = false
-  AND CASE WHEN array_length($1::int[] /* status_filter */, 1) > 0 THEN m.status = ANY($1) ELSE true END
-  AND CASE WHEN array_length($2::int[] /* domain_filter */, 1) > 0 THEN m.domain_id = ANY($2) ELSE true END
-  AND ($3 /* search */ = '' OR m.address ILIKE '%' || $3 || '%')
+  AND CASE WHEN array_length(@status_filter::int[], 1) > 0 THEN m.status = ANY(@status_filter) ELSE true END
+  AND CASE WHEN array_length(@domain_filter::int[], 1) > 0 THEN m.domain_id = ANY(@domain_filter) ELSE true END
+  AND (@search_query::text = '' OR m.address ILIKE '%' || @search_query || '%')
+  AND (@user_id::int IS NULL OR m.user_id = @user_id)
 ORDER BY m.created_at DESC
-LIMIT $4 /* limit */ OFFSET $5 /* offset */;
+LIMIT @page_limit OFFSET @page_offset;
 
 -- name: GetMailboxesStats :one
 SELECT 
@@ -77,7 +88,7 @@ SELECT
     COUNT(*) FILTER (WHERE status = 2) as inactive_count,
     COUNT(DISTINCT domain_id) as domains_count
 FROM mailboxes
-WHERE is_deleted = false;
+WHERE is_deleted = false AND user_id = $1;
 
 -- name: UpdateMailboxesStatusByDomainID :exec
 UPDATE mailboxes 

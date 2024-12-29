@@ -11,7 +11,7 @@ type Store interface {
 	GetDomainByID(ctx context.Context, id int32) (GetDomainByIDRow, error)
 	GetAllDomains(ctx context.Context, arg GetAllDomainsParams) ([]GetAllDomainsRow, error)
 	GetDomainByName(ctx context.Context, name string) (GetDomainByNameRow, error)
-	GetDomainsCount(ctx context.Context) (int64, error)
+	GetDomainsCount(ctx context.Context, userID int32) (int64, error)
 	UpdateDomain(ctx context.Context, arg UpdateDomainParams) error
 	SetDomainStatus(ctx context.Context, arg SetDomainStatusParams) error
 	DeleteDomain(ctx context.Context, id int32) error
@@ -23,12 +23,12 @@ type Store interface {
 	GetMailboxesByDomain(ctx context.Context, address string) ([]GetMailboxesByDomainRow, error)
 	GetMailboxesByDomainID(ctx context.Context, arg GetMailboxesByDomainIDParams) ([]Mailbox, error)
 	GetMailboxesCountByDomainID(ctx context.Context, domainID int32) (int64, error)
-	GetMailboxesCount(ctx context.Context) (int64, error)
+	GetMailboxesCount(ctx context.Context, userID int32) (int64, error)
 	UpdateMailbox(ctx context.Context, arg UpdateMailboxParams) error
 	SetMailboxStatus(ctx context.Context, arg SetMailboxStatusParams) error
 	DeleteMailbox(ctx context.Context, id int32) error
 	GetMailboxesWithFilters(ctx context.Context, arg GetMailboxesWithFiltersParams) ([]GetMailboxesWithFiltersRow, error)
-	GetMailboxesStats(ctx context.Context) (GetMailboxesStatsRow, error)
+	GetMailboxesStats(ctx context.Context, userID int32) (GetMailboxesStatsRow, error)
 	UpdateMailboxesStatusByID(ctx context.Context, arg UpdateMailboxesStatusByIDParams) error
 
 	GetDomainsByUserID(ctx context.Context, arg GetDomainsByUserIDParams) ([]Domain, error)

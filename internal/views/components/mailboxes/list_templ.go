@@ -48,17 +48,24 @@ func List(data ListData) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"mailboxes-list\" class=\"container mx-auto px-4 py-8\"><div class=\"mb-8\"><h1 class=\"text-2xl font-bold mb-4\">Mailboxes</h1><div id=\"mailboxes-list-page\" class=\"bg-white shadow sm:rounded-lg\"><div class=\"px-4 py-5 sm:p-6\"><div class=\"sm:flex sm:items-center\"><div class=\"sm:flex-auto\"><p class=\"mt-2 text-sm text-gray-700\">A list of all mailboxes in your account.</p></div><div class=\"mt-4 sm:ml-16 sm:mt-0 sm:flex-none\"><button type=\"button\" class=\"block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600\" hx-get=\"/mailboxes/new\" hx-target=\"#modal\">Add mailbox</button></div></div><div id=\"mailboxes-list\" class=\"mt-8\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = TableWithPagination(data).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div></div></div></div></div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
+		if len(data.Mailboxes) == 0 {
+			templ_7745c5c3_Err = EmptyState().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"mailboxes-list\" class=\"container mx-auto px-4 py-8\"><div class=\"mb-8\"><h1 class=\"text-2xl font-bold mb-4\">Mailboxes</h1><div id=\"mailboxes-list-page\" class=\"bg-white shadow sm:rounded-lg\"><div class=\"px-4 py-5 sm:p-6\"><div class=\"sm:flex sm:items-center\"><div class=\"sm:flex-auto\"><p class=\"mt-2 text-sm text-gray-700\">A list of all mailboxes in your account.</p></div><div class=\"mt-4 sm:ml-16 sm:mt-0 sm:flex-none\"><button type=\"button\" class=\"block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600\" hx-get=\"/mailboxes/new\" hx-target=\"#modal\">Add mailbox</button></div></div><div id=\"mailboxes-list\" class=\"mt-8\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = TableWithPagination(data).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div></div></div></div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
 		return templ_7745c5c3_Err
 	})
@@ -181,7 +188,7 @@ func TableRow(mailbox db.GetMailboxesWithFiltersRow) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(mailbox.Address)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/list.templ`, Line: 83, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/list.templ`, Line: 87, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -194,7 +201,7 @@ func TableRow(mailbox db.GetMailboxesWithFiltersRow) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(mailbox.DomainName.String)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/list.templ`, Line: 86, Col: 99}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/list.templ`, Line: 90, Col: 99}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -215,7 +222,7 @@ func TableRow(mailbox db.GetMailboxesWithFiltersRow) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mailboxes/%d/edit", mailbox.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/list.templ`, Line: 94, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/list.templ`, Line: 98, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -236,7 +243,7 @@ func TableRow(mailbox db.GetMailboxesWithFiltersRow) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mailboxes/%d", mailbox.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/list.templ`, Line: 101, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/list.templ`, Line: 105, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {

@@ -14,15 +14,26 @@ import (
 )
 
 const createMailbox = `-- name: CreateMailbox :one
-INSERT INTO mailboxes (address, password, domain_id, created_at, status)
-VALUES ($1, $2, $3, NOW(), $4)
-RETURNING id, address, password, domain_id, created_at, status, is_deleted, settings, last_login, last_password_change, password_expires_at, user_id
+INSERT INTO mailboxes (
+    address, 
+    password, 
+    domain_id, 
+    user_id,
+    created_at, 
+    status
+) VALUES (
+    $1, $2, $3, 
+    $4,
+    NOW(), 
+    $5
+) RETURNING id, address, password, domain_id, created_at, status, is_deleted, settings, last_login, last_password_change, password_expires_at, user_id
 `
 
 type CreateMailboxParams struct {
 	Address  string `json:"address"`
 	Password string `json:"password"`
 	DomainID int32  `json:"domain_id"`
+	UserID   int32  `json:"user_id"`
 	Status   int32  `json:"status"`
 }
 
@@ -31,6 +42,7 @@ func (q *Queries) CreateMailbox(ctx context.Context, arg CreateMailboxParams) (M
 		arg.Address,
 		arg.Password,
 		arg.DomainID,
+		arg.UserID,
 		arg.Status,
 	)
 	var i Mailbox
@@ -88,7 +100,7 @@ type GetAllMailboxesRow struct {
 	LastLogin          sql.NullTime          `json:"last_login"`
 	LastPasswordChange sql.NullTime          `json:"last_password_change"`
 	PasswordExpiresAt  sql.NullTime          `json:"password_expires_at"`
-	UserID             sql.NullInt32         `json:"user_id"`
+	UserID             int32                 `json:"user_id"`
 	DomainName         sql.NullString        `json:"domain_name"`
 }
 
@@ -311,9 +323,9 @@ OFFSET $3
 `
 
 type GetMailboxesByUserIDParams struct {
-	UserID sql.NullInt32 `json:"user_id"`
-	Limit  int32         `json:"limit"`
-	Offset int32         `json:"offset"`
+	UserID int32 `json:"user_id"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) GetMailboxesByUserID(ctx context.Context, arg GetMailboxesByUserIDParams) ([]Mailbox, error) {
@@ -354,11 +366,11 @@ func (q *Queries) GetMailboxesByUserID(ctx context.Context, arg GetMailboxesByUs
 
 const getMailboxesCount = `-- name: GetMailboxesCount :one
 SELECT COUNT(*) FROM mailboxes
-WHERE is_deleted = false
+WHERE is_deleted = false AND user_id = $1
 `
 
-func (q *Queries) GetMailboxesCount(ctx context.Context) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getMailboxesCount)
+func (q *Queries) GetMailboxesCount(ctx context.Context, userID int32) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getMailboxesCount, userID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -383,7 +395,7 @@ SELECT
     COUNT(*) FILTER (WHERE status = 2) as inactive_count,
     COUNT(DISTINCT domain_id) as domains_count
 FROM mailboxes
-WHERE is_deleted = false
+WHERE is_deleted = false AND user_id = $1
 `
 
 type GetMailboxesStatsRow struct {
@@ -393,8 +405,8 @@ type GetMailboxesStatsRow struct {
 	DomainsCount  int64 `json:"domains_count"`
 }
 
-func (q *Queries) GetMailboxesStats(ctx context.Context) (GetMailboxesStatsRow, error) {
-	row := q.db.QueryRowContext(ctx, getMailboxesStats)
+func (q *Queries) GetMailboxesStats(ctx context.Context, userID int32) (GetMailboxesStatsRow, error) {
+	row := q.db.QueryRowContext(ctx, getMailboxesStats, userID)
 	var i GetMailboxesStatsRow
 	err := row.Scan(
 		&i.TotalCount,
@@ -410,19 +422,21 @@ SELECT m.id, m.address, m.password, m.domain_id, m.created_at, m.status, m.is_de
 FROM mailboxes m
 LEFT JOIN domains d ON m.domain_id = d.id
 WHERE m.is_deleted = false
-  AND CASE WHEN array_length($1::int[] /* status_filter */, 1) > 0 THEN m.status = ANY($1) ELSE true END
-  AND CASE WHEN array_length($2::int[] /* domain_filter */, 1) > 0 THEN m.domain_id = ANY($2) ELSE true END
-  AND ($3 /* search */ = '' OR m.address ILIKE '%' || $3 || '%')
+  AND CASE WHEN array_length($1::int[], 1) > 0 THEN m.status = ANY($1) ELSE true END
+  AND CASE WHEN array_length($2::int[], 1) > 0 THEN m.domain_id = ANY($2) ELSE true END
+  AND ($3::text = '' OR m.address ILIKE '%' || $3 || '%')
+  AND ($4::int IS NULL OR m.user_id = $4)
 ORDER BY m.created_at DESC
-LIMIT $4 /* limit */ OFFSET $5 /* offset */
+LIMIT $6 OFFSET $5
 `
 
 type GetMailboxesWithFiltersParams struct {
-	Column1 []int32     `json:"column_1"`
-	Column2 []int32     `json:"column_2"`
-	Column3 interface{} `json:"column_3"`
-	Limit   int32       `json:"limit"`
-	Offset  int32       `json:"offset"`
+	StatusFilter []int32 `json:"status_filter"`
+	DomainFilter []int32 `json:"domain_filter"`
+	SearchQuery  string  `json:"search_query"`
+	UserID       int32   `json:"user_id"`
+	PageOffset   int32   `json:"page_offset"`
+	PageLimit    int32   `json:"page_limit"`
 }
 
 type GetMailboxesWithFiltersRow struct {
@@ -437,17 +451,18 @@ type GetMailboxesWithFiltersRow struct {
 	LastLogin          sql.NullTime          `json:"last_login"`
 	LastPasswordChange sql.NullTime          `json:"last_password_change"`
 	PasswordExpiresAt  sql.NullTime          `json:"password_expires_at"`
-	UserID             sql.NullInt32         `json:"user_id"`
+	UserID             int32                 `json:"user_id"`
 	DomainName         sql.NullString        `json:"domain_name"`
 }
 
 func (q *Queries) GetMailboxesWithFilters(ctx context.Context, arg GetMailboxesWithFiltersParams) ([]GetMailboxesWithFiltersRow, error) {
 	rows, err := q.db.QueryContext(ctx, getMailboxesWithFilters,
-		pq.Array(arg.Column1),
-		pq.Array(arg.Column2),
-		arg.Column3,
-		arg.Limit,
-		arg.Offset,
+		pq.Array(arg.StatusFilter),
+		pq.Array(arg.DomainFilter),
+		arg.SearchQuery,
+		arg.UserID,
+		arg.PageOffset,
+		arg.PageLimit,
 	)
 	if err != nil {
 		return nil, err
@@ -531,10 +546,10 @@ WHERE id = $1
 `
 
 type UpdateMailboxParams struct {
-	ID       int32         `json:"id"`
-	Address  string        `json:"address"`
-	DomainID int32         `json:"domain_id"`
-	UserID   sql.NullInt32 `json:"user_id"`
+	ID       int32  `json:"id"`
+	Address  string `json:"address"`
+	DomainID int32  `json:"domain_id"`
+	UserID   int32  `json:"user_id"`
 }
 
 func (q *Queries) UpdateMailbox(ctx context.Context, arg UpdateMailboxParams) error {

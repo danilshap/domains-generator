@@ -28,51 +28,55 @@ type ListData struct {
 }
 
 templ List(data ListData) {
-	<div class="container mx-auto px-4 py-8">
-		<div class="mb-8">
-			<h1 class="text-2xl font-bold mb-4">Domains</h1>
-			<div class="grid grid-cols-4 gap-4 mb-6">
-				<div class="bg-white p-4 rounded-lg shadow">
-					<div class="text-sm text-gray-500">Total Mailboxes</div>
-					<div class="text-2xl font-bold">{ fmt.Sprint(data.Stats.TotalCount) }</div>
-				</div>
-				<div class="bg-white p-4 rounded-lg shadow">
-					<div class="text-sm text-gray-500">Active Mailboxes</div>
-					<div class="text-2xl font-bold text-green-600">{ fmt.Sprint(data.Stats.ActiveCount) }</div>
-				</div>
-				<div class="bg-white p-4 rounded-lg shadow">
-					<div class="text-sm text-gray-500">Inactive Mailboxes</div>
-					<div class="text-2xl font-bold text-yellow-600">{ fmt.Sprint(data.Stats.InactiveCount) }</div>
-				</div>
-			</div>
-			<div id="domains-list-page" class="bg-white shadow sm:rounded-lg">
-				<div class="px-4 py-5 sm:p-6">
-					<div class="sm:flex sm:items-center sm:justify-between">
-						<div>
-							<h3 class="text-lg leading-6 font-medium text-gray-900">Domains</h3>
-							<p class="mt-1 text-sm text-gray-500">Manage your domain names and their settings.</p>
-						</div>
-						<div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-							<button
-								type="button"
-								class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
-								hx-get="/domains/new"
-								hx-target="#domain-form"
-								hx-swap="innerHTML"
-							>
-								<i class="fas fa-plus mr-2"></i>
-								Add Domain
-							</button>
-						</div>
+	if len(data.Domains) == 0 {
+		@EmptyState()
+	} else {
+		<div class="container mx-auto px-4 py-8">
+			<div class="mb-8">
+				<h1 class="text-2xl font-bold mb-4">Domains</h1>
+				<div class="grid grid-cols-3 gap-4 mb-6">
+					<div class="bg-white p-4 rounded-lg shadow">
+						<div class="text-sm text-gray-500">Total Mailboxes</div>
+						<div class="text-2xl font-bold">{ fmt.Sprint(data.Stats.TotalCount) }</div>
 					</div>
-					<div id="domain-form" class="mt-6"></div>
-					<div id="domains-list" class="mt-8">
-						@TableWithPagination(data)
+					<div class="bg-white p-4 rounded-lg shadow">
+						<div class="text-sm text-gray-500">Active Mailboxes</div>
+						<div class="text-2xl font-bold text-green-600">{ fmt.Sprint(data.Stats.ActiveCount) }</div>
+					</div>
+					<div class="bg-white p-4 rounded-lg shadow">
+						<div class="text-sm text-gray-500">Inactive Mailboxes</div>
+						<div class="text-2xl font-bold text-yellow-600">{ fmt.Sprint(data.Stats.InactiveCount) }</div>
+					</div>
+				</div>
+				<div id="domains-list-page" class="bg-white shadow sm:rounded-lg">
+					<div class="px-4 py-5 sm:p-6">
+						<div class="sm:flex sm:items-center sm:justify-between">
+							<div>
+								<h3 class="text-lg leading-6 font-medium text-gray-900">Domains</h3>
+								<p class="mt-1 text-sm text-gray-500">Manage your domain names and their settings.</p>
+							</div>
+							<div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+								<button
+									type="button"
+									class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+									hx-get="/domains/new"
+									hx-target="#domain-form"
+									hx-swap="innerHTML"
+								>
+									<i class="fas fa-plus mr-2"></i>
+									Add Domain
+								</button>
+							</div>
+						</div>
+						<div id="domain-form" class="mt-6"></div>
+						<div id="domains-list" class="mt-8">
+							@TableWithPagination(data)
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
-	</div>
+	}
 }
 
 templ Table(data ListData) {
@@ -108,7 +112,7 @@ templ TableRow(domain db.GetAllDomainsRow) {
 		<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{ domain.Provider }</td>
 		<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
 			<span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
-				{ fmt.Sprintf("%d mailboxes", domain.MailboxCount) }
+				{ fmt.Sprintf("%d mailboxes", domain.MailboxesCount) }
 			</span>
 		</td>
 		<td class="whitespace-nowrap px-3 py-4 text-sm">

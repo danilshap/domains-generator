@@ -1,0 +1,20 @@
+package layouts
+
+templ Auth(contents templ.Component) {
+	<html>
+		<head>
+			<title>Domain Mail</title>
+			<script src="https://unpkg.com/htmx.org@1.9.9"></script>
+			<script src="https://cdn.tailwindcss.com"></script>
+			<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+		</head>
+		<body class="h-full bg-gray-50">
+			<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+				<div class="max-w-md w-full space-y-8">
+					@contents
+				</div>
+			</div>
+			<script src="/assets/js/auth.js"></script>
+		</body>
+	</html>
+}

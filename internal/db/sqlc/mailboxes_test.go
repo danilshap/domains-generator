@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	"github.com/danilshap/domains-generator/pkg/utils"
@@ -146,11 +145,11 @@ func TestGetMailboxesWithFilters(t *testing.T) {
 
 	// Test status filter
 	activeMailboxes, err := testQueries.GetMailboxesWithFilters(context.Background(), GetMailboxesWithFiltersParams{
-		Column1: []int32{1},
-		Column2: []int32{},
-		Column3: "",
-		Limit:   10,
-		Offset:  0,
+		StatusFilter: []int32{1},
+		DomainFilter: []int32{},
+		SearchQuery:  "",
+		PageLimit:    10,
+		PageOffset:   0,
 	})
 	require.NoError(t, err)
 	for _, mailbox := range activeMailboxes {
@@ -159,11 +158,11 @@ func TestGetMailboxesWithFilters(t *testing.T) {
 
 	// Test domain filter
 	domainMailboxes, err := testQueries.GetMailboxesWithFilters(context.Background(), GetMailboxesWithFiltersParams{
-		Column1: []int32{},
-		Column2: []int32{domain.ID},
-		Column3: "",
-		Limit:   10,
-		Offset:  0,
+		StatusFilter: []int32{},
+		DomainFilter: []int32{domain.ID},
+		SearchQuery:  "",
+		PageLimit:    10,
+		PageOffset:   0,
 	})
 	require.NoError(t, err)
 	for _, mailbox := range domainMailboxes {
@@ -172,6 +171,7 @@ func TestGetMailboxesWithFilters(t *testing.T) {
 }
 
 func TestGetMailboxesStats(t *testing.T) {
+	user := createRandomUser(t)
 	// Create a test domain
 	domain := createRandomDomain(t)
 
@@ -181,7 +181,7 @@ func TestGetMailboxesStats(t *testing.T) {
 	createMailboxWithStatus(t, domain.ID, 2)
 
 	// Get statistics
-	stats, err := testQueries.GetMailboxesStats(context.Background())
+	stats, err := testQueries.GetMailboxesStats(context.Background(), user.ID)
 	require.NoError(t, err)
 
 	// Check statistics
@@ -234,13 +234,13 @@ func TestGetMailboxesByUserID(t *testing.T) {
 			ID:       mailbox.ID,
 			DomainID: domain.ID,
 			Address:  utils.RandomEmail(),
-			UserID:   sql.NullInt32{Int32: user.ID, Valid: true},
+			UserID:   user.ID,
 		})
 		require.NoError(t, err)
 	}
 
 	arg := GetMailboxesByUserIDParams{
-		UserID: sql.NullInt32{Int32: user.ID, Valid: true},
+		UserID: user.ID,
 		Limit:  3,
 		Offset: 0,
 	}
@@ -251,6 +251,6 @@ func TestGetMailboxesByUserID(t *testing.T) {
 
 	for _, mailbox := range mailboxes {
 		require.NotEmpty(t, mailbox)
-		require.Equal(t, user.ID, mailbox.UserID.Int32)
+		require.Equal(t, user.ID, mailbox.UserID)
 	}
 }

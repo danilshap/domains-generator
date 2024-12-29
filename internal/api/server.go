@@ -1,29 +1,46 @@
 package api
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/danilshap/domains-generator/internal/auth"
 	db "github.com/danilshap/domains-generator/internal/db/sqlc"
+	"github.com/danilshap/domains-generator/internal/middleware"
+	"github.com/danilshap/domains-generator/pkg/config"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
 type Server struct {
-	store  db.Store
-	router *chi.Mux
+	store      db.Store
+	router     *chi.Mux
+	tokenMaker *auth.JWTMaker
 }
 
-func NewServer(store db.Store) (*Server, error) {
+func NewServer(store db.Store, cfg *config.Config) (*Server, error) {
+	tokenMaker, err := auth.NewJWTMaker(cfg.TokenSynnetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token maker: %w", err)
+	}
+
 	server := &Server{
-		store:  store,
-		router: chi.NewRouter(),
+		store:      store,
+		router:     chi.NewRouter(),
+		tokenMaker: tokenMaker,
 	}
 
 	// Middleware
-	server.router.Use(middleware.Logger)
-	server.router.Use(middleware.Recoverer)
+	server.router.Use(chimiddleware.Logger)
+	server.router.Use(chimiddleware.Recoverer)
+	server.router.Use(middleware.AuthMiddleware(server.tokenMaker))
 
 	// Routes
+	server.router.Get("/login", server.handleLoginPage)
+	server.router.Get("/register", server.handleRegisterPage)
+	server.router.Post("/login", server.handleLogin)
+	server.router.Post("/register", server.handleRegister)
 	server.setupRoutes()
 
 	return server, nil
@@ -56,4 +73,12 @@ func (s *Server) setupRoutes() {
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
+}
+
+func getCurrentUser(r *http.Request) (*auth.Payload, error) {
+	payload, ok := r.Context().Value(middleware.UserContextKey).(*auth.Payload)
+	if !ok {
+		return nil, errors.New("unauthorized")
+	}
+	return payload, nil
 }

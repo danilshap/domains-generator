@@ -8,17 +8,17 @@ SELECT id, name, provider, status, created_at, expires_at, is_deleted, settings 
 WHERE id = $1 AND is_deleted = false LIMIT 1;
 
 -- name: GetAllDomains :many
-SELECT d.*,
-       COUNT(m.id) FILTER (WHERE m.is_deleted = false) as mailbox_count
+SELECT d.*, COUNT(m.id) as mailboxes_count 
 FROM domains d
-LEFT JOIN mailboxes m ON d.id = m.domain_id
-WHERE d.is_deleted = false
+LEFT JOIN mailboxes m ON d.id = m.domain_id AND m.is_deleted = false
+WHERE d.is_deleted = false AND d.user_id = $3
 GROUP BY d.id
 ORDER BY d.created_at DESC
 LIMIT $1 OFFSET $2;
 
 -- name: GetDomainsCount :one
-SELECT COUNT(*) FROM domains;
+SELECT COUNT(*) FROM domains
+WHERE is_deleted = false AND user_id = $1;
 
 -- name: GetDomainByName :one
 SELECT id, name, provider, status, created_at, expires_at, is_deleted

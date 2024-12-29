@@ -14,7 +14,7 @@ type Config struct {
 	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 }
 
-func Load(path string) (config Config, err error) {
+func Load(path string) (config *Config, err error) {
 	viper.AddConfigPath(path)
 	viper.SetConfigName("local")
 	viper.SetConfigType("env")

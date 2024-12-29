@@ -14,6 +14,12 @@ import (
 const mailboxPageSize = 10
 
 func (s *Server) handleListMailboxes(w http.ResponseWriter, r *http.Request) {
+	user, err := getCurrentUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	page := 1
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
 		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
@@ -24,18 +30,19 @@ func (s *Server) handleListMailboxes(w http.ResponseWriter, r *http.Request) {
 	offset := (page - 1) * mailboxPageSize
 
 	mailboxList, err := s.store.GetMailboxesWithFilters(r.Context(), db.GetMailboxesWithFiltersParams{
-		Column1: []int32{}, // status filters
-		Column2: []int32{}, // domain filters
-		Column3: "",        // search
-		Limit:   mailboxPageSize,
-		Offset:  int32(offset),
+		StatusFilter: []int32{}, // status filters
+		DomainFilter: []int32{}, // domain filters
+		SearchQuery:  "",        // search
+		UserID:       user.UserID,
+		PageLimit:    mailboxPageSize,
+		PageOffset:   int32(offset),
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	totalCount, err := s.store.GetMailboxesCount(r.Context())
+	totalCount, err := s.store.GetMailboxesCount(r.Context(), user.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -60,9 +67,16 @@ func (s *Server) handleListMailboxes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleNewMailboxForm(w http.ResponseWriter, r *http.Request) {
+	user, err := getCurrentUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	domains, err := s.store.GetAllDomains(r.Context(), db.GetAllDomainsParams{
-		Limit:  100, // Assuming there aren't too many domains
+		Limit:  100,
 		Offset: 0,
+		UserID: user.UserID,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -73,6 +87,12 @@ func (s *Server) handleNewMailboxForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleCreateMailbox(w http.ResponseWriter, r *http.Request) {
+	user, err := getCurrentUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -99,6 +119,7 @@ func (s *Server) handleCreateMailbox(w http.ResponseWriter, r *http.Request) {
 		Address:  r.FormValue("address"),
 		Password: r.FormValue("password"),
 		DomainID: int32(domainID),
+		UserID:   user.UserID,
 		Status:   1, // Active by default
 	}
 
