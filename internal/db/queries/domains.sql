@@ -1,6 +1,6 @@
 -- name: CreateDomain :one
-INSERT INTO domains (name, provider, status, created_at, expires_at)
-VALUES ($1, $2, $3, NOW(), $4)
+INSERT INTO domains (name, provider, status, user_id, created_at, expires_at)
+VALUES ($1, $2, $3, $4, NOW(), $5)
 RETURNING *;
 
 -- name: GetDomainByID :one

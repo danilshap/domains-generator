@@ -130,7 +130,8 @@ func (s *Server) handleCreateMailbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Trigger", `{"showMessage": "Mailbox created successfully", "closeModal": "true", "refreshMailboxes": "true"}`)
+		w.Header().Set("HX-Trigger", `{"showMessage": "Mailbox created successfully"}`)
+		w.Header().Set("HX-Redirect", "/mailboxes")
 		w.WriteHeader(http.StatusOK)
 	} else {
 		http.Redirect(w, r, fmt.Sprintf("/mailboxes/%d", mailbox.ID), http.StatusSeeOther)
@@ -171,6 +172,12 @@ func (s *Server) handleMailboxDetails(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleEditMailboxForm(w http.ResponseWriter, r *http.Request) {
+	user, err := getCurrentUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -186,6 +193,7 @@ func (s *Server) handleEditMailboxForm(w http.ResponseWriter, r *http.Request) {
 	domains, err := s.store.GetAllDomains(r.Context(), db.GetAllDomainsParams{
 		Limit:  100,
 		Offset: 0,
+		UserID: user.UserID,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -196,6 +204,12 @@ func (s *Server) handleEditMailboxForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUpdateMailbox(w http.ResponseWriter, r *http.Request) {
+	user, err := getCurrentUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -217,6 +231,7 @@ func (s *Server) handleUpdateMailbox(w http.ResponseWriter, r *http.Request) {
 		ID:       int32(id),
 		Address:  r.FormValue("address"),
 		DomainID: int32(domainID),
+		UserID:   user.UserID,
 	}
 
 	err = s.store.UpdateMailbox(r.Context(), arg)
@@ -225,7 +240,13 @@ func (s *Server) handleUpdateMailbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/mailboxes/%d", id), http.StatusSeeOther)
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Trigger", `{"showMessage": "Mailbox created successfully"}`)
+		w.Header().Set("HX-Redirect", "/mailboxes")
+		w.WriteHeader(http.StatusOK)
+	} else {
+		http.Redirect(w, r, fmt.Sprintf("/mailboxes/%d", id), http.StatusSeeOther)
+	}
 }
 
 func (s *Server) handleDeleteMailbox(w http.ResponseWriter, r *http.Request) {

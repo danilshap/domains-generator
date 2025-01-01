@@ -37,6 +37,7 @@ func (s *Server) handleListDomains(w http.ResponseWriter, r *http.Request) {
 	domainsList, err := s.store.GetAllDomains(r.Context(), db.GetAllDomainsParams{
 		Limit:  pageSize,
 		Offset: int32(offset),
+		UserID: user.UserID,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -56,7 +57,6 @@ func (s *Server) handleListDomains(w http.ResponseWriter, r *http.Request) {
 	}
 
 	totalPages := (totalCount + pageSize - 1) / pageSize
-	fmt.Println(totalPages)
 
 	data := domains.ListData{
 		Domains:     domainsList,
@@ -86,6 +86,12 @@ func isValidDomain(domain string) bool {
 }
 
 func (s *Server) handleCreateDomain(w http.ResponseWriter, r *http.Request) {
+	user, err := getCurrentUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -100,6 +106,7 @@ func (s *Server) handleCreateDomain(w http.ResponseWriter, r *http.Request) {
 		Name:     r.FormValue("name"),
 		Provider: r.FormValue("provider"),
 		Status:   1,
+		UserID:   user.UserID,
 	}
 
 	domain, err := s.store.CreateDomain(r.Context(), arg)
@@ -124,22 +131,14 @@ func (s *Server) handleDeleteDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	domainList, err := s.store.GetAllDomains(r.Context(), db.GetAllDomainsParams{
-		Limit:  pageSize,
-		Offset: 0,
-	})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Trigger", `{"showMessage": "Domain updated successfully"}`)
+		w.Header().Set("HX-Redirect", "/domains")
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	data := domains.ListData{
-		Domains:     domainList,
-		CurrentPage: 1,
-		TotalPages:  1,
-		PageSize:    pageSize,
-	}
-	domains.Table(data).Render(r.Context(), w)
+	http.Redirect(w, r, "/domains", http.StatusSeeOther)
 }
 
 func (s *Server) handleDomainDetails(w http.ResponseWriter, r *http.Request) {
@@ -216,12 +215,6 @@ func (s *Server) handleEditDomainForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUpdateDomain(w http.ResponseWriter, r *http.Request) {
-	user, err := getCurrentUser(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -245,32 +238,14 @@ func (s *Server) handleUpdateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return updated list of domains
-	domainsList, err := s.store.GetAllDomains(r.Context(), db.GetAllDomainsParams{
-		Limit:  pageSize,
-		Offset: 0,
-	})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Trigger", `{"showMessage": "Domain updated successfully"}`)
+		w.Header().Set("HX-Redirect", "/domains")
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	totalCount, err := s.store.GetDomainsCount(r.Context(), user.UserID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	totalPages := (totalCount + pageSize - 1) / pageSize
-
-	data := domains.ListData{
-		Domains:     domainsList,
-		CurrentPage: 1,
-		TotalPages:  int32(totalPages),
-		PageSize:    pageSize,
-	}
-
-	domains.List(data).Render(r.Context(), w)
+	http.Redirect(w, r, "/domains", http.StatusSeeOther)
 }
 
 func (s *Server) handleStatusForm(w http.ResponseWriter, r *http.Request) {
@@ -290,12 +265,6 @@ func (s *Server) handleStatusForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
-	user, err := getCurrentUser(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -319,30 +288,12 @@ func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return updated list of domains
-	domainsList, err := s.store.GetAllDomains(r.Context(), db.GetAllDomainsParams{
-		Limit:  pageSize,
-		Offset: 0,
-	})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Trigger", `{"showMessage": "Domain updated successfully"}`)
+		w.Header().Set("HX-Redirect", "/domains")
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	totalCount, err := s.store.GetDomainsCount(r.Context(), user.UserID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	totalPages := (totalCount + pageSize - 1) / pageSize
-
-	data := domains.ListData{
-		Domains:     domainsList,
-		CurrentPage: 1,
-		TotalPages:  int32(totalPages),
-		PageSize:    pageSize,
-	}
-
-	domains.List(data).Render(r.Context(), w)
+	http.Redirect(w, r, "/domains", http.StatusSeeOther)
 }

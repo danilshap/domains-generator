@@ -13,8 +13,8 @@ import (
 )
 
 const createDomain = `-- name: CreateDomain :one
-INSERT INTO domains (name, provider, status, created_at, expires_at)
-VALUES ($1, $2, $3, NOW(), $4)
+INSERT INTO domains (name, provider, status, user_id, created_at, expires_at)
+VALUES ($1, $2, $3, $4, NOW(), $5)
 RETURNING id, name, provider, status, created_at, expires_at, is_deleted, settings, user_id
 `
 
@@ -22,6 +22,7 @@ type CreateDomainParams struct {
 	Name      string       `json:"name"`
 	Provider  string       `json:"provider"`
 	Status    int32        `json:"status"`
+	UserID    int32        `json:"user_id"`
 	ExpiresAt sql.NullTime `json:"expires_at"`
 }
 
@@ -30,6 +31,7 @@ func (q *Queries) CreateDomain(ctx context.Context, arg CreateDomainParams) (Dom
 		arg.Name,
 		arg.Provider,
 		arg.Status,
+		arg.UserID,
 		arg.ExpiresAt,
 	)
 	var i Domain
