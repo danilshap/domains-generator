@@ -1,0 +1,37 @@
+package common
+
+templ DomainStatusBadge(status int32) {
+	<span
+		class={
+			templ.KV("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", true),
+			templ.KV("bg-green-100 text-green-800", status == 1),
+			templ.KV("bg-red-100 text-red-800", status == 2),
+		}
+	>
+		if status == 1 {
+			Active
+		} else {
+			Inactive
+		}
+	</span>
+}
+
+templ MailboxStatusBadge(status int32) {
+	<span
+		class={
+			templ.KV("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", true),
+			templ.KV("bg-green-100 text-green-800", status == 1),
+			templ.KV("bg-red-100 text-red-800", status == 2),
+			templ.KV("bg-yellow-100 text-yellow-800", status == 3),
+		}
+	>
+		switch status {
+			case 1:
+				Active
+			case 2:
+				Inactive
+			case 3:
+				Pending
+		}
+	</span>
+}

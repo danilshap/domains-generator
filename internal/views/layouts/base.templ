@@ -2,7 +2,7 @@ package layouts
 
 import "github.com/danilshap/domains-generator/internal/views/components/common"
 
-templ Base(content templ.Component) {
+templ Base(contents templ.Component) {
 	<!DOCTYPE html>
 	<html class="h-full bg-gray-100">
 		<head>
@@ -16,14 +16,9 @@ templ Base(content templ.Component) {
 		</head>
 		<body class="h-full">
 			<div class="min-h-full">
-				@common.Nav()
-				<main>
-					<div class="pl-64">
-						<div class="p-8">
-							@content
-						</div>
-					</div>
-				</main>
+				@common.Nav() {
+					@contents
+				}
 				@common.Modal()
 			</div>
 			<script>

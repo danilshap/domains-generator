@@ -9,7 +9,7 @@ templ Form() {
 					<button
 						type="button"
 						class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none"
-						onclick="document.getElementById('modal-backdrop').remove(); this.closest('#domain-form').innerHTML = ''"
+						onclick="closeModal()"
 					>
 						<span class="sr-only">Close</span>
 						<i class="fas fa-times h-6 w-6"></i>
@@ -61,7 +61,7 @@ templ Form() {
 									<button
 										type="button"
 										class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
-										onclick="document.getElementById('modal-backdrop').remove(); this.closest('#domain-form').innerHTML = ''"
+										onclick="closeModal()"
 									>
 										Cancel
 									</button>

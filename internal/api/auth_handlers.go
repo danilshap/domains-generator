@@ -120,3 +120,17 @@ func (s *Server) handleRegisterPage(w http.ResponseWriter, r *http.Request) {
 	component := layouts.Auth(auth.Register())
 	component.Render(r.Context(), w)
 }
+
+func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	// Clear the auth cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
+	})
+
+	// Redirect to login page
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
+}

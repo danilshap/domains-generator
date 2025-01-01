@@ -11,8 +11,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const mailboxPageSize = 10
-
 func (s *Server) handleListMailboxes(w http.ResponseWriter, r *http.Request) {
 	user, err := getCurrentUser(r)
 	if err != nil {
@@ -58,7 +56,7 @@ func (s *Server) handleListMailboxes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		mailboxes.TableWithPagination(data).Render(r.Context(), w)
+		mailboxes.List(data).Render(r.Context(), w)
 		return
 	}
 

@@ -41,6 +41,7 @@ func NewServer(store db.Store, cfg *config.Config) (*Server, error) {
 	server.router.Get("/register", server.handleRegisterPage)
 	server.router.Post("/login", server.handleLogin)
 	server.router.Post("/register", server.handleRegister)
+	server.router.Post("/logout", server.handleLogout)
 	server.setupRoutes()
 
 	return server, nil

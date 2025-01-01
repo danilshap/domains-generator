@@ -52,3 +52,16 @@ SELECT u.* FROM users u
 JOIN domains d ON d.user_id = u.id
 WHERE d.id = $1 AND u.is_active = true
 LIMIT 1;
+
+-- name: UpdateDomainAndMailboxesStatus :exec
+WITH updated_domain AS (
+    UPDATE domains
+    SET status = $2
+    WHERE id = $1
+    AND status != $2
+    RETURNING id
+)
+UPDATE mailboxes
+SET status = $2
+WHERE domain_id = $1
+AND status != $2;

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -13,6 +14,7 @@ import (
 )
 
 const pageSize = 10
+const mailboxPageSize = 10
 
 func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/domains", http.StatusSeeOther)
@@ -50,12 +52,6 @@ func (s *Server) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stats, err := s.store.GetMailboxesStats(r.Context(), user.UserID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	totalPages := (totalCount + pageSize - 1) / pageSize
 
 	data := domains.ListData{
@@ -63,11 +59,10 @@ func (s *Server) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		CurrentPage: int32(page),
 		TotalPages:  int32(totalPages),
 		PageSize:    pageSize,
-		Stats:       stats,
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		domains.TableWithPagination(data).Render(r.Context(), w)
+		domains.List(data).Render(r.Context(), w)
 		return
 	}
 
@@ -148,6 +143,16 @@ func (s *Server) handleDomainDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	domain, err := s.store.GetDomainByID(r.Context(), int32(id))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Domain not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	page := 1
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
 		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
@@ -156,12 +161,6 @@ func (s *Server) handleDomainDetails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	offset := (page - 1) * mailboxPageSize
-
-	domain, err := s.store.GetDomainByID(r.Context(), int32(id))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 
 	mailboxes, err := s.store.GetMailboxesByDomainID(r.Context(), db.GetMailboxesByDomainIDParams{
 		DomainID: domain.ID,
@@ -181,7 +180,7 @@ func (s *Server) handleDomainDetails(w http.ResponseWriter, r *http.Request) {
 
 	totalPages := (totalCount + mailboxPageSize - 1) / mailboxPageSize
 
-	data := domains.DomainDetailsData{
+	data := domains.DetailsData{
 		Domain:      domain,
 		Mailboxes:   mailboxes,
 		CurrentPage: int32(page),
@@ -190,11 +189,11 @@ func (s *Server) handleDomainDetails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		domains.MailboxesTable(data).Render(r.Context(), w)
+		domains.Details(data).Render(r.Context(), w)
 		return
 	}
 
-	component := layouts.Base(domains.DomainDetails(data))
+	component := layouts.Base(domains.Details(data))
 	component.Render(r.Context(), w)
 }
 
@@ -282,6 +281,11 @@ func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if status != 1 && status != 2 {
+		http.Error(w, "Invalid status value", http.StatusBadRequest)
+		return
+	}
+
 	err = s.store.UpdateDomainAndMailboxesStatus(r.Context(), int32(id), int32(status))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -289,11 +293,11 @@ func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Trigger", `{"showMessage": "Domain updated successfully"}`)
-		w.Header().Set("HX-Redirect", "/domains")
+		w.Header().Set("HX-Trigger", `{"showMessage": "Domain status updated successfully"}`)
+		w.Header().Set("HX-Redirect", fmt.Sprintf("/domains/%d", id))
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	http.Redirect(w, r, "/domains", http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/domains/%d", id), http.StatusSeeOther)
 }

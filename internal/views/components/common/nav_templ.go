@@ -29,7 +29,15 @@ func Nav() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg\"><div class=\"flex h-16 items-center justify-between px-6 border-b border-gray-200\"><span class=\"text-xl font-bold text-gray-900\">DM</span> <button type=\"button\" class=\"p-1.5\"><i class=\"fa-solid fa-circle-user text-gray-400 hover:text-indigo-600 text-xl transition-colors\"></i></button></div><nav class=\"px-4 py-4\"><div class=\"space-y-1\"><a href=\"/domains\" class=\"flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors\"><i class=\"fa-solid fa-globe text-indigo-600 text-lg w-6\"></i> <span class=\"ml-3 text-gray-900\">Domains</span></a> <a href=\"/mailboxes\" class=\"flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors\"><i class=\"fa-solid fa-envelope text-indigo-600 text-lg w-6\"></i> <span class=\"ml-3 text-gray-900\">Mailboxes</span></a><div class=\"border-t border-gray-200 my-4\"></div><a href=\"/settings\" class=\"flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors\"><i class=\"fa-solid fa-gear text-indigo-600 text-lg w-6\"></i> <span class=\"ml-3 text-gray-900\">Settings</span></a></div></nav></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"min-h-screen\"><aside class=\"fixed inset-y-0 left-0 w-[64px] hover:w-[200px] bg-white border-r border-gray-100 transition-all duration-300 ease-in-out group/nav z-50\"><div class=\"px-4 py-4\"><nav class=\"space-y-4\"><a href=\"/domains\" class=\"flex items-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-2 transition-colors\"><i class=\"fa-solid fa-globe w-5 text-[18px]\"></i> <span class=\"ml-3 text-[13px] opacity-0 group-hover/nav:opacity-100 whitespace-nowrap transition-opacity duration-300\">Domains</span></a> <a href=\"/mailboxes\" class=\"flex items-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-2 transition-colors\"><i class=\"fa-solid fa-envelope w-5 text-[18px]\"></i> <span class=\"ml-3 text-[13px] opacity-0 group-hover/nav:opacity-100 whitespace-nowrap transition-opacity duration-300\">Mailboxes</span></a></nav><div class=\"absolute bottom-4 inset-x-0 px-4\"><form action=\"/logout\" method=\"POST\"><button type=\"submit\" class=\"w-full flex items-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-2 transition-colors\"><i class=\"fa-solid fa-right-from-bracket w-5 text-[18px]\"></i> <span class=\"ml-3 text-[13px] opacity-0 group-hover/nav:opacity-100 whitespace-nowrap transition-opacity duration-300\">Sign out</span></button></form></div></div></aside><main class=\"ml-[64px] p-8\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ_7745c5c3_Var1.Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</main></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

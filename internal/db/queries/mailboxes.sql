@@ -43,9 +43,9 @@ SET is_deleted = true
 WHERE id = $1;
 
 -- name: GetMailboxesByDomainID :many
-SELECT * FROM mailboxes 
-WHERE domain_id = $1 AND is_deleted = false
-LIMIT $2 OFFSET $3;
+SELECT * FROM mailboxes
+WHERE domain_id = $1
+ORDER BY created_at DESC;
 
 -- name: GetMailboxesCountByDomainID :one
 SELECT COUNT(*) FROM mailboxes 
