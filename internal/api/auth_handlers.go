@@ -15,11 +15,6 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
-type loginResponse struct {
-	Token string  `json:"token"`
-	User  db.User `json:"user"`
-}
-
 type registerRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`

@@ -291,10 +291,18 @@ func (s *Server) handleUpdateMailboxStatus(w http.ResponseWriter, r *http.Reques
 		ID:     int32(id),
 		Status: int32(status),
 	})
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Trigger", `{"showMessage": "Mailbox status updated successfully"}`)
+		w.Header().Set("HX-Redirect", fmt.Sprintf("/mailboxes/%d", id))
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/mailboxes/%d", id), http.StatusSeeOther)
 }

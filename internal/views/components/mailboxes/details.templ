@@ -3,7 +3,7 @@ package mailboxes
 import (
 	"fmt"
 	db "github.com/danilshap/domains-generator/internal/db/sqlc"
-	"github.com/danilshap/domains-generator/internal/views/components/domains"
+	"github.com/danilshap/domains-generator/internal/views/components/common"
 )
 
 type DetailsData struct {
@@ -12,69 +12,90 @@ type DetailsData struct {
 }
 
 templ Details(data DetailsData) {
-	<div class="bg-white shadow sm:rounded-lg">
-		<div class="px-4 py-5 sm:p-6">
-			<div id="mailbox-form"></div>
-			<div class="border-b border-gray-200 pb-5">
-				<div class="flex justify-between items-center">
-					<div>
-						<div class="flex items-center gap-3">
-							<h3 class="text-2xl font-semibold leading-6 text-gray-900">{ data.Mailbox.Address }</h3>
-							@domains.StatusBadge(data.Mailbox.Status)
+	<div class="space-y-6">
+		// Header section
+		<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+			<div class="px-6 py-5 border-b border-gray-100">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center space-x-4">
+						<div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center">
+							<i class="fa-solid fa-envelope text-indigo-600 text-2xl"></i>
 						</div>
-						<p class="mt-2 text-sm text-gray-500">Email account details and configuration</p>
+						<div>
+							<h1 class="text-2xl font-semibold text-gray-900">{ data.Mailbox.Address }</h1>
+							<p class="text-sm text-gray-500">Added on { data.Mailbox.CreatedAt.Time.Format("January 2, 2006") }</p>
+						</div>
 					</div>
-					<div class="flex gap-3">
-						if data.Mailbox.Status == 1 {
+					<div class="flex items-center -m-1.5">
+						<div class="p-1.5">
 							<button
-								class="inline-flex items-center rounded-md bg-yellow-100 px-3 py-2 text-sm font-semibold text-yellow-800 hover:bg-yellow-200"
-								hx-put={ fmt.Sprintf("/mailboxes/%d/status", data.Mailbox.ID) }
-								hx-vals={ `{"status": 2}` }
-								hx-confirm="Are you sure you want to deactivate this email account?"
-								hx-target="body"
-								hx-swap="none"
-								hx-on::after-request="window.location.reload()"
+								type="button"
+								class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+								hx-get={ fmt.Sprintf("/mailboxes/%d/edit", data.Mailbox.ID) }
+								hx-target="#modal"
+								title="Edit Mailbox"
 							>
-								<i class="fas fa-ban mr-2"></i>
-								Deactivate Account
+								<i class="fa-solid fa-pencil text-[15px]"></i>
 							</button>
-						} else if data.Mailbox.Status == 2 {
+						</div>
+						<div class="p-1.5">
 							<button
-								class="inline-flex items-center rounded-md bg-green-100 px-3 py-2 text-sm font-semibold text-green-800 hover:bg-green-200"
+								type="button"
+								class={
+									templ.KV("inline-flex items-center justify-center w-8 h-8 text-gray-500 rounded-lg transition-colors", true),
+									templ.KV("hover:text-red-600 hover:bg-red-50", data.Mailbox.Status == 1),
+									templ.KV("hover:text-green-600 hover:bg-green-50", data.Mailbox.Status == 2),
+								}
 								hx-put={ fmt.Sprintf("/mailboxes/%d/status", data.Mailbox.ID) }
-								hx-vals={ `{"status": 1}` }
-								hx-confirm="Are you sure you want to activate this email account?"
-								hx-target="body"
-								hx-swap="none"
-								hx-on::after-request="window.location.reload()"
+								hx-vals={ fmt.Sprintf(`{"status": %d}`, map[int32]int32{1: 2, 2: 1}[data.Mailbox.Status]) }
+								if data.Mailbox.Status == 1 {
+									hx-confirm="Are you sure you want to deactivate this mailbox?"
+								}
+								title={ map[int32]string{1: "Deactivate Mailbox", 2: "Activate Mailbox"}[data.Mailbox.Status] }
 							>
-								<i class="fas fa-check mr-2"></i>
-								Activate Account
+								if data.Mailbox.Status == 1 {
+									<i class="fa-solid fa-ban text-[15px]"></i>
+								} else {
+									<i class="fa-solid fa-power-off text-[15px]"></i>
+								}
 							</button>
-						}
-						<button
-							class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
-							hx-get={ fmt.Sprintf("/mailboxes/%d/edit", data.Mailbox.ID) }
-							hx-target="#mailbox-form"
-						>
-							<i class="fas fa-edit mr-2"></i>
-							Edit Account
-						</button>
+						</div>
+						<div class="p-1.5">
+							<button
+								type="button"
+								class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+								hx-delete={ fmt.Sprintf("/mailboxes/%d", data.Mailbox.ID) }
+								hx-confirm="Are you sure you want to delete this mailbox?"
+								hx-target="body"
+								hx-push-url="/mailboxes"
+								title="Delete Mailbox"
+							>
+								<i class="fa-solid fa-trash text-[15px]"></i>
+							</button>
+						</div>
 					</div>
 				</div>
 			</div>
-			<div class="mt-6">
-				<h4 class="text-base font-semibold leading-7 text-gray-900">Account Information</h4>
-				<dl class="mt-4 space-y-4">
-					<div>
-						<dt class="text-sm font-medium text-gray-500">Domain</dt>
-						<dd class="mt-1 text-sm text-gray-900">{ data.Domain.Name }</dd>
+			// Mailbox info section
+			<div class="px-6 py-5 grid grid-cols-3 gap-6">
+				<div>
+					<div class="text-sm font-medium text-gray-500 mb-1">Domain</div>
+					<div class="inline-flex items-center">
+						<div class="w-6 h-6 rounded-md bg-indigo-50 flex items-center justify-center mr-2">
+							<i class="fa-solid fa-globe text-indigo-600 text-xs"></i>
+						</div>
+						<a
+							href={ templ.SafeURL(fmt.Sprintf("/domains/%d", data.Domain.ID)) }
+							class="text-sm text-gray-900 hover:text-indigo-600 transition-colors"
+						>
+							{ data.Domain.Name }
+						</a>
 					</div>
-					<div>
-						<dt class="text-sm font-medium text-gray-500">Created At</dt>
-						<dd class="mt-1 text-sm text-gray-900">{ data.Mailbox.CreatedAt.Time.Format("2006-01-02 15:04:05") }</dd>
-					</div>
-				</dl>
+				</div>
+				<div>
+					<div class="text-sm font-medium text-gray-500 mb-1">Status</div>
+					@common.MailboxStatusBadge(data.Mailbox.Status)
+				</div>
 			</div>
 		</div>
 	</div>
