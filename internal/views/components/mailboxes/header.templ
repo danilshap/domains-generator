@@ -1,0 +1,19 @@
+package mailboxes
+
+type HeaderData struct {
+	Title       string
+	Description string
+	DomainID    int32
+}
+
+templ Header(data HeaderData) {
+    <div class="px-6 py-5 border-b border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">{ data.Title }</h2>
+                <p class="mt-1 text-sm text-gray-500">{ data.Description }</p>
+            </div>
+            @Actions(data.DomainID)
+        </div>
+    </div>
+} 

@@ -1,0 +1,35 @@
+package mailboxes
+
+import "github.com/danilshap/domains-generator/internal/models/view"
+
+templ Page(data view.MailboxListData) {
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        @Header(HeaderData{
+            Title: "Mailboxes",
+            Description: "Manage your email accounts and settings",
+            DomainID: data.DomainID,
+        })
+        if len(data.Mailboxes) == 0 {
+            <div class="px-6 py-12">
+                <div class="text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-50 mb-4">
+                        <i class="fa-solid fa-envelope text-indigo-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-gray-900 mb-1">No mailboxes yet</h3>
+                    <p class="text-sm text-gray-500 mb-4">Get started by adding your first mailbox.</p>
+                    <button
+                        type="button"
+                        class="inline-flex items-center px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                        hx-get="/mailboxes/new"
+                        hx-target="#modal"
+                    >
+                        <i class="fa-solid fa-plus mr-2"></i>
+                        Add Your First Mailbox
+                    </button>
+                </div>
+            </div>
+        } else {
+            @List(data)
+        }
+    </div>
+} 

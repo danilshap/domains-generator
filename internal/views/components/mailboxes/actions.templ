@@ -1,0 +1,28 @@
+package mailboxes
+
+import "fmt"
+
+templ Actions(domainID int32) {
+	<div class="flex space-x-3">
+		<button
+			type="button"
+			class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm"
+			hx-get={ fmt.Sprintf("/mailboxes/new?domain_id=%d", domainID) }
+			hx-target="#modal"
+		>
+			<i class="fa-solid fa-plus mr-2"></i>
+			Add Single Mailbox
+		</button>
+		if domainID > 0 {
+			<button
+				type="button"
+				class="inline-flex items-center px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+				hx-get={ fmt.Sprintf("/domains/%d/bulk-mailboxes", domainID) }
+				hx-target="#modal"
+			>
+				<i class="fa-solid fa-layer-group mr-2"></i>
+				Create Multiple
+			</button>
+		}
+	</div>
+}

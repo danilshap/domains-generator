@@ -2,90 +2,76 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
+	"github.com/danilshap/domains-generator/internal/auth"
 	mockdb "github.com/danilshap/domains-generator/internal/db/mock"
 	db "github.com/danilshap/domains-generator/internal/db/sqlc"
+	"github.com/danilshap/domains-generator/internal/middleware"
+	"github.com/danilshap/domains-generator/pkg/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestHandleHome(t *testing.T) {
-	server, err := NewServer(nil, nil)
-	require.NoError(t, err)
-
-	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/", nil)
-	server.handleHome(recorder, request)
-
-	require.Equal(t, http.StatusSeeOther, recorder.Code)
-	require.Equal(t, "/domains", recorder.Header().Get("Location"))
-}
-
 func TestHandleListDomains(t *testing.T) {
+	user := createRandomUser(t)
+	n := 5
+	domains := make([]db.GetAllDomainsRow, n)
+	for i := 0; i < n; i++ {
+		domains[i] = db.GetAllDomainsRow{
+			ID:       int32(i + 1),
+			Name:     utils.RandomString(10),
+			Provider: "test",
+			Status:   1,
+			UserID:   user.ID,
+		}
+	}
+
 	testCases := []struct {
 		name          string
-		page          string
 		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+		checkResponse func(t *testing.T, rec *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
-			page: "1",
 			buildStubs: func(store *mockdb.MockStore) {
+				arg := db.GetAllDomainsParams{
+					Limit:  10,
+					Offset: 0,
+					UserID: user.ID,
+				}
 				store.EXPECT().
-					GetAllDomains(gomock.Any(), gomock.Any()).
+					GetAllDomains(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
-					Return([]db.GetAllDomainsRow{}, nil)
+					Return(domains, nil)
 
 				store.EXPECT().
-					GetDomainsCount(gomock.Any(), gomock.Any()).
+					GetDomainsCount(gomock.Any(), gomock.Eq(user.ID)).
 					Times(1).
-					Return(int64(10), nil)
-
-				store.EXPECT().
-					GetMailboxesStats(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(db.GetMailboxesStatsRow{
-						ActiveCount:   5,
-						InactiveCount: 3,
-						TotalCount:    10,
-					}, nil)
+					Return(int64(n), nil)
 			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, rec.Code)
+				requireBodyMatchDomains(t, rec.Body.String(), domains)
 			},
 		},
 		{
-			name: "InvalidPage",
-			page: "invalid",
+			name: "InternalError",
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetAllDomains(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return([]db.GetAllDomainsRow{}, nil)
-
-				store.EXPECT().
-					GetDomainsCount(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(int64(10), nil)
-
-				store.EXPECT().
-					GetMailboxesStats(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(db.GetMailboxesStatsRow{
-						ActiveCount:   5,
-						InactiveCount: 3,
-						TotalCount:    10,
-					}, nil)
+					Return(nil, fmt.Errorf("internal error"))
 			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, rec.Code)
 			},
 		},
 	}
@@ -100,100 +86,65 @@ func TestHandleListDomains(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store, nil)
-			require.NoError(t, err)
+			server := newTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
 			url := "/domains"
-			if tc.page != "" {
-				url += "?page=" + tc.page
-			}
 			request := httptest.NewRequest(http.MethodGet, url, nil)
+
+			// Add authorized user to context
+			authPayload := &auth.Payload{
+				UserID: user.ID,
+			}
+			request = request.WithContext(context.WithValue(request.Context(), middleware.UserContextKey, authPayload))
+
 			server.handleListDomains(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
 	}
 }
 
-func TestHandleNewDomainForm(t *testing.T) {
-	server, err := NewServer(nil, nil)
-	require.NoError(t, err)
+func TestHandleUpdateDomainStatus(t *testing.T) {
+	user := createRandomUser(t)
+	domain := db.Domain{
+		ID:     1,
+		Status: 1,
+		UserID: user.ID,
+	}
 
-	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/domains/new", nil)
-	server.handleNewDomainForm(recorder, request)
-
-	require.Equal(t, http.StatusOK, recorder.Code)
-}
-
-func TestHandleDeleteDomain(t *testing.T) {
 	testCases := []struct {
 		name          string
-		setupRequest  func() (*http.Request, error)
+		domainID      int32
+		formData      string
 		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+		checkResponse func(t *testing.T, rec *httptest.ResponseRecorder)
 	}{
 		{
-			name: "OK",
-			setupRequest: func() (*http.Request, error) {
-				url := "/domains/1"
-				request := httptest.NewRequest(http.MethodDelete, url, strings.NewReader(""))
-				chiCtx := chi.NewRouteContext()
-				chiCtx.URLParams.Add("id", "1")
-				return request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx)), nil
-			},
+			name:     "OK",
+			domainID: domain.ID,
+			formData: "status=2",
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					DeleteDomain(gomock.Any(), gomock.Eq(int32(1))).
+					UpdateDomainAndMailboxesStatus(gomock.Any(), gomock.Eq(domain.ID), gomock.Eq(int32(2))).
 					Times(1).
 					Return(nil)
-
-				store.EXPECT().
-					GetAllDomains(gomock.Any(), db.GetAllDomainsParams{
-						Limit:  10,
-						Offset: 0,
-					}).
-					Times(1).
-					Return([]db.GetAllDomainsRow{}, nil)
 			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				require.Contains(t, recorder.Body.String(), "<table")
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusSeeOther, rec.Code)
+				require.Equal(t, fmt.Sprintf("/domains/%d", domain.ID), rec.Header().Get("Location"))
 			},
 		},
 		{
-			name: "InvalidID",
-			setupRequest: func() (*http.Request, error) {
-				url := "/domains/invalid"
-				request := httptest.NewRequest(http.MethodDelete, url, strings.NewReader(""))
-				chiCtx := chi.NewRouteContext()
-				chiCtx.URLParams.Add("id", "invalid")
-				return request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx)), nil
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				// No need to mock methods as error will occur during ID parsing
-			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
-			},
-		},
-		{
-			name: "DeleteError",
-			setupRequest: func() (*http.Request, error) {
-				url := "/domains/1"
-				request := httptest.NewRequest(http.MethodDelete, url, strings.NewReader(""))
-				chiCtx := chi.NewRouteContext()
-				chiCtx.URLParams.Add("id", "1")
-				return request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx)), nil
-			},
+			name:     "InvalidStatus",
+			domainID: domain.ID,
+			formData: "status=invalid",
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					DeleteDomain(gomock.Any(), gomock.Eq(int32(1))).
-					Times(1).
-					Return(fmt.Errorf("delete error"))
+					UpdateDomainAndMailboxesStatus(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(0)
 			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, rec.Code)
 			},
 		},
 	}
@@ -208,12 +159,146 @@ func TestHandleDeleteDomain(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store, nil)
-			require.NoError(t, err)
+			server := newTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
-			request, err := tc.setupRequest()
-			require.NoError(t, err)
+			url := fmt.Sprintf("/domains/%d/status", tc.domainID)
+			request := httptest.NewRequest(http.MethodPut, url, strings.NewReader(tc.formData))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+			chiCtx := chi.NewRouteContext()
+			chiCtx.URLParams.Add("id", fmt.Sprint(tc.domainID))
+			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx))
+
+			// Add authorized user to context
+			authPayload := &auth.Payload{
+				UserID: user.ID,
+			}
+			request = request.WithContext(context.WithValue(request.Context(), middleware.UserContextKey, authPayload))
+
+			server.handleUpdateDomainStatus(recorder, request)
+			tc.checkResponse(t, recorder)
+		})
+	}
+}
+
+func createRandomUser(t *testing.T) db.User {
+	return db.User{
+		ID:       1,
+		Username: utils.RandomString(6),
+		Email:    utils.RandomEmail(),
+	}
+}
+
+func requireBodyMatchDomains(t *testing.T, body string, domains []db.GetAllDomainsRow) {
+	require.Contains(t, body, "Domains")
+	for _, domain := range domains {
+		require.Contains(t, body, domain.Name)
+	}
+}
+
+func TestIsValidDomain(t *testing.T) {
+	testCases := []struct {
+		name     string
+		domain   string
+		expected bool
+	}{
+		{
+			name:     "ValidDomain",
+			domain:   "example.com",
+			expected: true,
+		},
+		{
+			name:     "ValidDomainWithSubdomain",
+			domain:   "sub.example.com",
+			expected: false,
+		},
+		{
+			name:     "InvalidDomainStartsWithHyphen",
+			domain:   "-example.com",
+			expected: false,
+		},
+		{
+			name:     "InvalidDomainEndsWithHyphen",
+			domain:   "example-.com",
+			expected: false,
+		},
+		{
+			name:     "InvalidDomainTooShort",
+			domain:   "e.c",
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := isValidDomain(tc.domain)
+			require.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestHandleDeleteDomain(t *testing.T) {
+	user := createRandomUser(t)
+	domain := db.Domain{
+		ID:     1,
+		UserID: user.ID,
+	}
+
+	testCases := []struct {
+		name          string
+		domainID      int32
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(t *testing.T, rec *httptest.ResponseRecorder)
+	}{
+		{
+			name:     "OK",
+			domainID: domain.ID,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteDomain(gomock.Any(), gomock.Eq(domain.ID)).
+					Times(1).
+					Return(nil)
+			},
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusSeeOther, rec.Code)
+				require.Equal(t, "/domains", rec.Header().Get("Location"))
+			},
+		},
+		{
+			name:     "InvalidID",
+			domainID: -1,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteDomain(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(fmt.Errorf("invalid id"))
+			},
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, rec.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			tc.buildStubs(store)
+
+			server := newTestServer(t, store)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("/domains/%d", tc.domainID)
+			request := httptest.NewRequest(http.MethodDelete, url, nil)
+
+			chiCtx := chi.NewRouteContext()
+			chiCtx.URLParams.Add("id", fmt.Sprint(tc.domainID))
+			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx))
 
 			server.handleDeleteDomain(recorder, request)
 			tc.checkResponse(t, recorder)
@@ -223,17 +308,23 @@ func TestHandleDeleteDomain(t *testing.T) {
 
 func TestHandleDomainDetails(t *testing.T) {
 	domain := db.GetDomainByIDRow{
-		ID:       1,
-		Name:     "test.com",
-		Provider: "test",
-		Status:   1,
+		ID:     1,
+		Name:   "test.com",
+		Status: 1,
+	}
+	mailboxes := []db.GetMailboxesByDomainIDRow{
+		{
+			ID:       1,
+			Address:  "test1@test.com",
+			DomainID: domain.ID,
+		},
 	}
 
 	testCases := []struct {
 		name          string
 		domainID      int32
 		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+		checkResponse func(t *testing.T, rec *httptest.ResponseRecorder)
 	}{
 		{
 			name:     "OK",
@@ -245,17 +336,31 @@ func TestHandleDomainDetails(t *testing.T) {
 					Return(domain, nil)
 
 				store.EXPECT().
-					GetMailboxesCountByDomainID(gomock.Any(), gomock.Eq(domain.ID)).
-					Times(1).
-					Return(int64(0), nil)
-
-				store.EXPECT().
 					GetMailboxesByDomainID(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return([]db.Mailbox{}, nil)
+					Return(mailboxes, nil)
+
+				store.EXPECT().
+					GetMailboxesCountByDomainID(gomock.Any(), gomock.Eq(domain.ID)).
+					Times(1).
+					Return(int64(len(mailboxes)), nil)
 			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, rec.Code)
+				require.Contains(t, rec.Body.String(), domain.Name)
+			},
+		},
+		{
+			name:     "DomainNotFound",
+			domainID: 999,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetDomainByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.GetDomainByIDRow{}, sql.ErrNoRows)
+			},
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, rec.Code)
 			},
 		},
 	}
@@ -270,153 +375,26 @@ func TestHandleDomainDetails(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store, nil)
-			require.NoError(t, err)
+			server := newTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/domains/%d", tc.domainID)
 			request := httptest.NewRequest(http.MethodGet, url, nil)
+
 			chiCtx := chi.NewRouteContext()
 			chiCtx.URLParams.Add("id", fmt.Sprint(tc.domainID))
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx))
+
 			server.handleDomainDetails(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
 	}
 }
 
-func TestHandleEditDomainForm(t *testing.T) {
-	domain := db.GetDomainByIDRow{
-		ID:       1,
-		Name:     "test.com",
-		Provider: "test",
-		Status:   1,
-	}
-
-	testCases := []struct {
-		name          string
-		domainID      int32
-		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
-	}{
-		{
-			name:     "OK",
-			domainID: domain.ID,
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().
-					GetDomainByID(gomock.Any(), gomock.Eq(domain.ID)).
-					Times(1).
-					Return(domain, nil)
-			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-			},
-		},
-	}
-
-	for i := range testCases {
-		tc := testCases[i]
-
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			tc.buildStubs(store)
-
-			server, err := NewServer(store, nil)
-			require.NoError(t, err)
-			recorder := httptest.NewRecorder()
-
-			url := fmt.Sprintf("/domains/%d/edit", tc.domainID)
-			request := httptest.NewRequest(http.MethodGet, url, nil)
-			chiCtx := chi.NewRouteContext()
-			chiCtx.URLParams.Add("id", fmt.Sprint(tc.domainID))
-			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx))
-			server.handleEditDomainForm(recorder, request)
-			tc.checkResponse(t, recorder)
-		})
-	}
-}
-
-func TestHandleUpdateDomain(t *testing.T) {
-	domain := db.Domain{
-		ID:       1,
-		Name:     "test.com",
-		Provider: "test",
-	}
-
-	testCases := []struct {
-		name          string
-		domainID      int32
-		formData      string
-		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
-	}{
-		{
-			name:     "OK",
-			domainID: domain.ID,
-			formData: "name=test.com&provider=test",
-			buildStubs: func(store *mockdb.MockStore) {
-				arg := db.UpdateDomainParams{
-					ID:       domain.ID,
-					Name:     domain.Name,
-					Provider: domain.Provider,
-				}
-				store.EXPECT().
-					UpdateDomain(gomock.Any(), gomock.Eq(arg)).
-					Times(1).
-					Return(nil)
-
-				store.EXPECT().
-					GetAllDomains(gomock.Any(), db.GetAllDomainsParams{
-						Limit:  10,
-						Offset: 0,
-					}).
-					Times(1).
-					Return([]db.GetAllDomainsRow{}, nil)
-
-				store.EXPECT().
-					GetDomainsCount(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(int64(0), nil)
-			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				require.Contains(t, recorder.Body.String(), "<table")
-			},
-		},
-	}
-
-	for i := range testCases {
-		tc := testCases[i]
-
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			tc.buildStubs(store)
-
-			server, err := NewServer(store, nil)
-			require.NoError(t, err)
-			recorder := httptest.NewRecorder()
-
-			url := fmt.Sprintf("/domains/%d", tc.domainID)
-			request := httptest.NewRequest(http.MethodPut, url, strings.NewReader(tc.formData))
-			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			chiCtx := chi.NewRouteContext()
-			chiCtx.URLParams.Add("id", fmt.Sprint(tc.domainID))
-			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx))
-			server.handleUpdateDomain(recorder, request)
-			tc.checkResponse(t, recorder)
-		})
-	}
-}
-
-func TestHandleStatusForm(t *testing.T) {
+func TestHandleBulkMailboxesForm(t *testing.T) {
 	domain := db.GetDomainByIDRow{
 		ID:     1,
+		Name:   "test.com",
 		Status: 1,
 	}
 
@@ -424,7 +402,7 @@ func TestHandleStatusForm(t *testing.T) {
 		name          string
 		domainID      int32
 		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+		checkResponse func(t *testing.T, rec *httptest.ResponseRecorder)
 	}{
 		{
 			name:     "OK",
@@ -435,8 +413,22 @@ func TestHandleStatusForm(t *testing.T) {
 					Times(1).
 					Return(domain, nil)
 			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, rec.Code)
+				require.Contains(t, rec.Body.String(), "Create Multiple Mailboxes")
+			},
+		},
+		{
+			name:     "InvalidDomainID",
+			domainID: 0,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetDomainByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.GetDomainByIDRow{}, sql.ErrNoRows)
+			},
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, rec.Code)
 			},
 		},
 	}
@@ -451,64 +443,91 @@ func TestHandleStatusForm(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store, nil)
-			require.NoError(t, err)
+			server := newTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/domains/%d/status", tc.domainID)
+			url := fmt.Sprintf("/domains/%d/bulk-mailboxes", tc.domainID)
 			request := httptest.NewRequest(http.MethodGet, url, nil)
+
 			chiCtx := chi.NewRouteContext()
 			chiCtx.URLParams.Add("id", fmt.Sprint(tc.domainID))
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx))
-			server.handleStatusForm(recorder, request)
+
+			server.handleBulkMailboxesForm(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
 	}
 }
 
-func TestHandleCreateDomains(t *testing.T) {
+func TestHandleCreateDomain(t *testing.T) {
+	user := createRandomUser(t)
 	domain := db.Domain{
 		ID:       1,
-		Name:     "test.com",
+		Name:     "example.com",
 		Provider: "test",
 		Status:   1,
+		UserID:   user.ID,
 	}
 
 	testCases := []struct {
 		name          string
-		formData      string
+		formData      map[string]string
 		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+		checkResponse func(t *testing.T, rec *httptest.ResponseRecorder)
 	}{
 		{
-			name:     "OK",
-			formData: "name=test.com&provider=test",
+			name: "OK",
+			formData: map[string]string{
+				"name":     domain.Name,
+				"provider": domain.Provider,
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.CreateDomainParams{
-					Name:     "test.com",
-					Provider: "test",
+					Name:     domain.Name,
+					Provider: domain.Provider,
 					Status:   1,
+					UserID:   user.ID,
 				}
+
 				store.EXPECT().
 					CreateDomain(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
 					Return(domain, nil)
 			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusSeeOther, recorder.Code)
-				require.Equal(t, fmt.Sprintf("/domains/%d", domain.ID), recorder.Header().Get("Location"))
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusSeeOther, rec.Code)
+				require.Equal(t, fmt.Sprintf("/domains/%d", domain.ID), rec.Header().Get("Location"))
 			},
 		},
 		{
-			name:     "InvalidDomain",
-			formData: "name=invalid&provider=test",
+			name: "InvalidDomainName",
+			formData: map[string]string{
+				"name":     "invalid..com",
+				"provider": domain.Provider,
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					CreateDomain(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, rec.Code)
+			},
+		},
+		{
+			name: "DBError",
+			formData: map[string]string{
+				"name":     domain.Name,
+				"provider": domain.Provider,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					CreateDomain(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.Domain{}, sql.ErrConnDone)
+			},
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, rec.Code)
 			},
 		},
 	}
@@ -523,117 +542,24 @@ func TestHandleCreateDomains(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server, err := NewServer(store, nil)
-			require.NoError(t, err)
+			server := newTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
-			request := httptest.NewRequest(http.MethodPost, "/domains", strings.NewReader(tc.formData))
+			form := url.Values{}
+			for k, v := range tc.formData {
+				form.Add(k, v)
+			}
+
+			request := httptest.NewRequest(http.MethodPost, "/domains", strings.NewReader(form.Encode()))
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
+			// Add authorized user to context
+			authPayload := &auth.Payload{
+				UserID: user.ID,
+			}
+			request = request.WithContext(context.WithValue(request.Context(), middleware.UserContextKey, authPayload))
+
 			server.handleCreateDomain(recorder, request)
-			tc.checkResponse(t, recorder)
-		})
-	}
-}
-
-func TestHandleUpdateStatus(t *testing.T) {
-	testCases := []struct {
-		name          string
-		setupRequest  func() (*http.Request, error)
-		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
-	}{
-		{
-			name: "OK",
-			setupRequest: func() (*http.Request, error) {
-				url := "/domains/1/status"
-				formData := "status=2"
-				request := httptest.NewRequest(http.MethodPut, url, strings.NewReader(formData))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				chiCtx := chi.NewRouteContext()
-				chiCtx.URLParams.Add("id", "1")
-				return request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx)), nil
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().
-					UpdateDomainAndMailboxesStatus(gomock.Any(), gomock.Eq(int32(1)), gomock.Eq(int32(2))).
-					Times(1).
-					Return(nil)
-
-				store.EXPECT().
-					GetAllDomains(gomock.Any(), db.GetAllDomainsParams{
-						Limit:  10,
-						Offset: 0,
-					}).
-					Times(1).
-					Return([]db.GetAllDomainsRow{}, nil)
-
-				store.EXPECT().
-					GetDomainsCount(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(int64(0), nil)
-			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				require.Contains(t, recorder.Body.String(), "<table")
-			},
-		},
-		{
-			name: "InvalidID",
-			setupRequest: func() (*http.Request, error) {
-				url := "/domains/invalid/status"
-				formData := "status=2"
-				request := httptest.NewRequest(http.MethodPut, url, strings.NewReader(formData))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				chiCtx := chi.NewRouteContext()
-				chiCtx.URLParams.Add("id", "invalid")
-				return request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx)), nil
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				// No need to mock methods as error will occur during ID parsing
-			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
-			},
-		},
-		{
-			name: "InvalidStatus",
-			setupRequest: func() (*http.Request, error) {
-				url := "/domains/1/status"
-				formData := "status=invalid"
-				request := httptest.NewRequest(http.MethodPut, url, strings.NewReader(formData))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				chiCtx := chi.NewRouteContext()
-				chiCtx.URLParams.Add("id", "1")
-				return request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, chiCtx)), nil
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				// No need to mock methods as error will occur during status parsing
-			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
-			},
-		},
-	}
-
-	for i := range testCases {
-		tc := testCases[i]
-
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			tc.buildStubs(store)
-
-			server, err := NewServer(store, nil)
-			require.NoError(t, err)
-			recorder := httptest.NewRecorder()
-
-			request, err := tc.setupRequest()
-			require.NoError(t, err)
-
-			server.handleUpdateStatus(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
 	}

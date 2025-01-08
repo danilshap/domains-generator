@@ -42,7 +42,7 @@ func List(data ListData) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden\"><div class=\"px-6 py-5 border-b border-gray-100\"><div class=\"flex items-center justify-between\"><div><h2 class=\"text-xl font-semibold text-gray-900\">Domains</h2><p class=\"mt-1 text-sm text-gray-500\">Manage your domain names and email configurations</p></div><button type=\"button\" class=\"inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm\" hx-get=\"/domains/new\" hx-target=\"#modal\"><i class=\"fa-solid fa-plus mr-2\"></i> Add Domain</button></div></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"domains-list\" class=\"bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden\"><div class=\"px-6 py-5 border-b border-gray-100\"><div class=\"flex items-center justify-between\"><div><h2 class=\"text-xl font-semibold text-gray-900\">Domains</h2><p class=\"mt-1 text-sm text-gray-500\">Manage your domain names and email configurations</p></div><button type=\"button\" class=\"inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm\" hx-get=\"/domains/new\" hx-target=\"#modal\"><i class=\"fa-solid fa-plus mr-2\"></i> Add Domain</button></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

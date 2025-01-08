@@ -10,7 +10,9 @@ import (
 var random *rand.Rand
 
 const (
-	laters = "qwertyuiopasdfghjklzxcvbnm"
+	laters  = "qwertyuiopasdfghjklzxcvbnm"
+	numbers = "0123456789"
+	charset = laters + numbers
 
 	length_of_random_owner = 6
 
@@ -50,4 +52,18 @@ func RandomProvider() string {
 func RandomEmail() string {
 	username := RandomString(10)
 	return username + "@test.com"
+}
+
+// Generate random string with specified length using alphanumeric characters
+func RandomStringWithCharset(length int, chars string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = chars[random.Intn(len(chars))]
+	}
+	return string(b)
+}
+
+// Generate random alphanumeric string
+func RandomAlphanumeric(length int) string {
+	return RandomStringWithCharset(length, charset)
 }

@@ -25,11 +25,6 @@ SELECT id, name, provider, status, created_at, expires_at, is_deleted
 FROM domains
 WHERE name = $1 AND is_deleted = false;
 
--- name: UpdateDomain :exec
-UPDATE domains 
-SET name = $2, provider = $3
-WHERE id = $1;
-
 -- name: SetDomainStatus :exec
 UPDATE domains 
 SET status = $2

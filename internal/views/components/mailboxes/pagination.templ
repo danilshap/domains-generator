@@ -1,8 +1,11 @@
 package mailboxes
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/danilshap/domains-generator/internal/models/view"
+)
 
-templ Pagination(data ListData) {
+templ Pagination(data view.MailboxListData) {
 	if data.TotalPages > 1 {
 		<nav class="flex items-center justify-between border-t border-gray-200 px-4 sm:px-0">
 			<div class="flex w-0 flex-1">

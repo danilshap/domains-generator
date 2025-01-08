@@ -257,10 +257,10 @@ func (mr *MockStoreMockRecorder) GetMailboxesByDomain(arg0, arg1 interface{}) *g
 }
 
 // GetMailboxesByDomainID mocks base method.
-func (m *MockStore) GetMailboxesByDomainID(arg0 context.Context, arg1 db.GetMailboxesByDomainIDParams) ([]db.Mailbox, error) {
+func (m *MockStore) GetMailboxesByDomainID(arg0 context.Context, arg1 db.GetMailboxesByDomainIDParams) ([]db.GetMailboxesByDomainIDRow, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMailboxesByDomainID", arg0, arg1)
-	ret0, _ := ret[0].([]db.Mailbox)
+	ret0, _ := ret[0].([]db.GetMailboxesByDomainIDRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -287,7 +287,7 @@ func (mr *MockStoreMockRecorder) GetMailboxesByUserID(arg0, arg1 interface{}) *g
 }
 
 // GetMailboxesCount mocks base method.
-func (m *MockStore) GetMailboxesCount(arg0 context.Context, arg1 int32) (int64, error) {
+func (m *MockStore) GetMailboxesCount(arg0 context.Context, arg1 db.GetMailboxesCountParams) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMailboxesCount", arg0, arg1)
 	ret0, _ := ret[0].(int64)
@@ -479,20 +479,6 @@ func (mr *MockStoreMockRecorder) SetMailboxStatus(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMailboxStatus", reflect.TypeOf((*MockStore)(nil).SetMailboxStatus), arg0, arg1)
 }
 
-// UpdateDomain mocks base method.
-func (m *MockStore) UpdateDomain(arg0 context.Context, arg1 db.UpdateDomainParams) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateDomain", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateDomain indicates an expected call of UpdateDomain.
-func (mr *MockStoreMockRecorder) UpdateDomain(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDomain", reflect.TypeOf((*MockStore)(nil).UpdateDomain), arg0, arg1)
-}
-
 // UpdateDomainAndMailboxesStatus mocks base method.
 func (m *MockStore) UpdateDomainAndMailboxesStatus(arg0 context.Context, arg1, arg2 int32) error {
 	m.ctrl.T.Helper()
@@ -507,18 +493,18 @@ func (mr *MockStoreMockRecorder) UpdateDomainAndMailboxesStatus(arg0, arg1, arg2
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDomainAndMailboxesStatus", reflect.TypeOf((*MockStore)(nil).UpdateDomainAndMailboxesStatus), arg0, arg1, arg2)
 }
 
-// UpdateMailbox mocks base method.
-func (m *MockStore) UpdateMailbox(arg0 context.Context, arg1 db.UpdateMailboxParams) error {
+// UpdateMailboxPassword mocks base method.
+func (m *MockStore) UpdateMailboxPassword(arg0 context.Context, arg1 db.UpdateMailboxPasswordParams) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateMailbox", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpdateMailboxPassword", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateMailbox indicates an expected call of UpdateMailbox.
-func (mr *MockStoreMockRecorder) UpdateMailbox(arg0, arg1 interface{}) *gomock.Call {
+// UpdateMailboxPassword indicates an expected call of UpdateMailboxPassword.
+func (mr *MockStoreMockRecorder) UpdateMailboxPassword(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMailbox", reflect.TypeOf((*MockStore)(nil).UpdateMailbox), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMailboxPassword", reflect.TypeOf((*MockStore)(nil).UpdateMailboxPassword), arg0, arg1)
 }
 
 // UpdateMailboxesStatusByID mocks base method.

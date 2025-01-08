@@ -43,9 +43,15 @@ SET is_deleted = true
 WHERE id = $1;
 
 -- name: GetMailboxesByDomainID :many
-SELECT * FROM mailboxes
-WHERE domain_id = $1
-ORDER BY created_at DESC;
+SELECT 
+    m.*,
+    d.name as domain_name,
+    d.status as domain_status
+FROM mailboxes m
+JOIN domains d ON d.id = m.domain_id
+WHERE m.domain_id = $1
+ORDER BY m.created_at DESC
+LIMIT $2 OFFSET $3;
 
 -- name: GetMailboxesCountByDomainID :one
 SELECT COUNT(*) FROM mailboxes 
@@ -56,17 +62,20 @@ SELECT COUNT(*) FROM mailboxes
 WHERE domain_id = $1 AND is_deleted = false;
 
 -- name: GetMailboxesCount :one
-SELECT COUNT(*) FROM mailboxes
-WHERE is_deleted = false AND user_id = $1;
+SELECT COUNT(*) 
+FROM mailboxes 
+WHERE user_id = $1 
+  AND CASE WHEN array_length(@domain_filter::int[], 1) > 0 THEN domain_id = ANY(@domain_filter) ELSE true END;
 
 -- name: GetMailboxByID :one
 SELECT * FROM mailboxes
 WHERE id = $1 AND is_deleted = false
 LIMIT 1;
 
--- name: UpdateMailbox :exec
+-- name: UpdateMailboxPassword :exec
 UPDATE mailboxes
-SET address = $2, domain_id = $3, user_id = $4
+SET password = $2,
+    updated_at = NOW()
 WHERE id = $1;
 
 -- name: GetMailboxesWithFilters :many

@@ -6,10 +6,56 @@ package db
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"fmt"
 	"time"
 
 	"github.com/sqlc-dev/pqtype"
 )
+
+type NotificationType string
+
+const (
+	NotificationTypeInfo    NotificationType = "info"
+	NotificationTypeSuccess NotificationType = "success"
+	NotificationTypeWarning NotificationType = "warning"
+	NotificationTypeError   NotificationType = "error"
+)
+
+func (e *NotificationType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = NotificationType(s)
+	case string:
+		*e = NotificationType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for NotificationType: %T", src)
+	}
+	return nil
+}
+
+type NullNotificationType struct {
+	NotificationType NotificationType `json:"notification_type"`
+	Valid            bool             `json:"valid"` // Valid is true if NotificationType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullNotificationType) Scan(value interface{}) error {
+	if value == nil {
+		ns.NotificationType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.NotificationType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullNotificationType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.NotificationType), nil
+}
 
 type Domain struct {
 	ID        int32                 `json:"id"`
@@ -36,6 +82,16 @@ type Mailbox struct {
 	LastPasswordChange sql.NullTime          `json:"last_password_change"`
 	PasswordExpiresAt  sql.NullTime          `json:"password_expires_at"`
 	UserID             int32                 `json:"user_id"`
+}
+
+type Notification struct {
+	ID        int64            `json:"id"`
+	UserID    int64            `json:"user_id"`
+	Title     string           `json:"title"`
+	Message   string           `json:"message"`
+	Type      NotificationType `json:"type"`
+	ReadAt    sql.NullTime     `json:"read_at"`
+	CreatedAt time.Time        `json:"created_at"`
 }
 
 type User struct {

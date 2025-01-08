@@ -8,15 +8,19 @@ import (
 	"github.com/danilshap/domains-generator/internal/auth"
 	db "github.com/danilshap/domains-generator/internal/db/sqlc"
 	"github.com/danilshap/domains-generator/internal/middleware"
+	"github.com/danilshap/domains-generator/internal/services/domain"
+	"github.com/danilshap/domains-generator/internal/services/mailbox"
 	"github.com/danilshap/domains-generator/pkg/config"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
 type Server struct {
-	store      db.Store
-	router     *chi.Mux
-	tokenMaker *auth.JWTMaker
+	store          db.Store
+	router         *chi.Mux
+	tokenMaker     *auth.JWTMaker
+	domainService  *domain.Service
+	mailboxService *mailbox.Service
 }
 
 func NewServer(store db.Store, cfg *config.Config) (*Server, error) {
@@ -25,10 +29,18 @@ func NewServer(store db.Store, cfg *config.Config) (*Server, error) {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
 	}
 
+	mockProvider := domain.NewMockProvider()
+	domainService := domain.NewService(mockProvider)
+
+	mockMailboxProvider := mailbox.NewMockProvider()
+	mailboxService := mailbox.NewService(mockMailboxProvider)
+
 	server := &Server{
-		store:      store,
-		router:     chi.NewRouter(),
-		tokenMaker: tokenMaker,
+		store:          store,
+		router:         chi.NewRouter(),
+		tokenMaker:     tokenMaker,
+		domainService:  domainService,
+		mailboxService: mailboxService,
 	}
 
 	// Middleware
@@ -54,11 +66,10 @@ func (s *Server) setupRoutes() {
 		r.Get("/new", s.handleNewDomainForm)
 		r.Post("/", s.handleCreateDomain)
 		r.Get("/{id}", s.handleDomainDetails)
-		r.Get("/{id}/edit", s.handleEditDomainForm)
-		r.Get("/{id}/status", s.handleStatusForm)
-		r.Put("/{id}", s.handleUpdateDomain)
-		r.Put("/{id}/status", s.handleUpdateStatus)
 		r.Delete("/{id}", s.handleDeleteDomain)
+		r.Put("/{id}/status", s.handleUpdateDomainStatus)
+		r.Get("/{id}/bulk-mailboxes", s.handleBulkMailboxesForm)
+		r.Post("/{id}/bulk-mailboxes", s.handleCreateBulkMailboxes)
 	})
 	s.router.Route("/mailboxes", func(r chi.Router) {
 		r.Get("/", s.handleListMailboxes)

@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	db "github.com/danilshap/domains-generator/internal/db/sqlc"
+	"github.com/danilshap/domains-generator/internal/models/view"
 	"github.com/danilshap/domains-generator/internal/views/components/domains"
 	"github.com/danilshap/domains-generator/internal/views/layouts"
 	"github.com/go-chi/chi/v5"
@@ -110,6 +111,11 @@ func (s *Server) handleCreateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := s.domainService.CreateDomain(r.Context(), domain.Name); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	http.Redirect(w, r, fmt.Sprintf("/domains/%d", domain.ID), http.StatusSeeOther)
 }
 
@@ -160,12 +166,10 @@ func (s *Server) handleDomainDetails(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	offset := (page - 1) * mailboxPageSize
-
-	mailboxes, err := s.store.GetMailboxesByDomainID(r.Context(), db.GetMailboxesByDomainIDParams{
+	emailAccounts, err := s.store.GetMailboxesByDomainID(r.Context(), db.GetMailboxesByDomainIDParams{
 		DomainID: domain.ID,
-		Limit:    mailboxPageSize,
-		Offset:   int32(offset),
+		Limit:    int32(mailboxPageSize),
+		Offset:   int32((page - 1) * mailboxPageSize),
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -178,14 +182,19 @@ func (s *Server) handleDomainDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	totalPages := (totalCount + mailboxPageSize - 1) / mailboxPageSize
+	totalPages := (totalCount + int64(mailboxPageSize) - 1) / int64(mailboxPageSize)
+
+	mailboxViews := make([]view.MailboxView, len(emailAccounts))
+	for i, m := range emailAccounts {
+		mailboxViews[i] = view.ToMailboxViewFromDomain(m)
+	}
 
 	data := domains.DetailsData{
 		Domain:      domain,
-		Mailboxes:   mailboxes,
+		Mailboxes:   mailboxViews,
 		CurrentPage: int32(page),
 		TotalPages:  int32(totalPages),
-		PageSize:    mailboxPageSize,
+		PageSize:    int32(mailboxPageSize),
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
@@ -197,73 +206,7 @@ func (s *Server) handleDomainDetails(w http.ResponseWriter, r *http.Request) {
 	component.Render(r.Context(), w)
 }
 
-func (s *Server) handleEditDomainForm(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	domain, err := s.store.GetDomainByID(r.Context(), int32(id))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	domains.EditForm(domain).Render(r.Context(), w)
-}
-
-func (s *Server) handleUpdateDomain(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	arg := db.UpdateDomainParams{
-		ID:       int32(id),
-		Name:     r.FormValue("name"),
-		Provider: r.FormValue("provider"),
-	}
-
-	err = s.store.UpdateDomain(r.Context(), arg)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Trigger", `{"showMessage": "Domain updated successfully"}`)
-		w.Header().Set("HX-Redirect", "/domains")
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	http.Redirect(w, r, "/domains", http.StatusSeeOther)
-}
-
-func (s *Server) handleStatusForm(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	domain, err := s.store.GetDomainByID(r.Context(), int32(id))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	domains.StatusForm(domain).Render(r.Context(), w)
-}
-
-func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleUpdateDomainStatus(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -300,4 +243,20 @@ func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/domains/%d", id), http.StatusSeeOther)
+}
+
+func (s *Server) handleBulkMailboxesForm(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	domain, err := s.store.GetDomainByID(r.Context(), int32(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	domains.BulkMailboxesForm(domain).Render(r.Context(), w)
 }

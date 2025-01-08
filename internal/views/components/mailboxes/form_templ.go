@@ -13,7 +13,7 @@ import (
 	db "github.com/danilshap/domains-generator/internal/db/sqlc"
 )
 
-func Form(domains []db.GetAllDomainsRow) templ.Component {
+func Form(domains []db.GetAllDomainsRow, domainID int32) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -34,45 +34,73 @@ func Form(domains []db.GetAllDomainsRow) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity\" id=\"modal-backdrop\"></div><div class=\"fixed inset-0 z-10 overflow-y-auto\"><div class=\"flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0\"><div class=\"relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6\"><div class=\"absolute right-0 top-0 hidden pr-4 pt-4 sm:block\"><button type=\"button\" class=\"rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none\" onclick=\"closeModal()\"><span class=\"sr-only\">Close</span> <i class=\"fas fa-times h-6 w-6\"></i></button></div><div class=\"flex justify-between items-center mb-6\"><h3 class=\"text-xl font-semibold text-gray-900\">Create New Mailbox</h3></div><form hx-post=\"/mailboxes\" hx-target=\"#modal\" hx-swap=\"innerHTML\" hx-on::after-request=\"closeModal()\" class=\"space-y-6\"><div class=\"space-y-4\"><div><label for=\"domain_id\" class=\"block text-sm font-medium text-gray-700 mb-1\">Domain</label><div class=\"relative\"><select id=\"domain_id\" name=\"domain_id\" required class=\"block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6\"><option value=\"\">Select a domain</option> ")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity\" id=\"modal-backdrop\"></div><div class=\"fixed inset-0 z-10 overflow-y-auto\"><div class=\"flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0\"><div class=\"relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6\"><div class=\"absolute right-0 top-0 hidden pr-4 pt-4 sm:block\"><button type=\"button\" class=\"rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none\" onclick=\"closeModal()\"><span class=\"sr-only\">Close</span> <i class=\"fas fa-times h-6 w-6\"></i></button></div><div class=\"flex justify-between items-center mb-6\"><h3 class=\"text-xl font-semibold text-gray-900\">Create New Mailbox</h3></div><form hx-post=\"/mailboxes\" hx-target=\"#modal\" hx-swap=\"innerHTML\" hx-on::after-request=\"closeModal()\" class=\"space-y-6\"><div class=\"space-y-4\"><div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		for _, domain := range domains {
-			if domain.Status == 1 {
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var2 string
-				templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(domain.ID))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/form.templ`, Line: 46, Col: 48}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var3 string
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(domain.Name)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/form.templ`, Line: 46, Col: 64}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</option>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
+		if domainID > 0 {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<input type=\"hidden\" name=\"domain_id\" value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var2 string
+			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(domainID))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/form.templ`, Line: 36, Col: 74}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<label for=\"domain_id\" class=\"block text-sm font-medium text-gray-700 mb-1\">Domain</label><div class=\"relative\"><select id=\"domain_id\" name=\"domain_id\" required class=\"block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6\"><option value=\"\">Select a domain</option> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			for _, domain := range domains {
+				if domain.Status == 1 {
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var3 string
+					templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(domain.ID))
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/form.templ`, Line: 49, Col: 48}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var4 string
+					templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(domain.Name)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/components/mailboxes/form.templ`, Line: 49, Col: 64}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</option>")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
 				}
 			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select><div class=\"pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3\"><i class=\"fa-solid fa-chevron-down text-gray-400 text-sm\"></i></div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select><div class=\"pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3\"><i class=\"fa-solid fa-chevron-down text-gray-400 text-sm\"></i></div></div></div><div><label for=\"address\" class=\"block text-sm font-medium text-gray-700 mb-1\">Email Address</label><div class=\"relative\"><input type=\"text\" name=\"address\" id=\"address\" required placeholder=\"username\" class=\"block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6\"><div class=\"pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3\"><i class=\"fa-solid fa-at text-gray-400\"></i></div></div></div><div><label for=\"password\" class=\"block text-sm font-medium text-gray-700 mb-1\">Password</label><div class=\"relative\"><input type=\"password\" name=\"password\" id=\"password\" required class=\"block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6\"><div class=\"pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3\"><i class=\"fa-solid fa-lock text-gray-400\"></i></div></div></div></div><div class=\"flex justify-end space-x-3 pt-2\"><button type=\"button\" class=\"rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50\" onclick=\"closeModal()\">Cancel</button> <button type=\"submit\" class=\"rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600\">Create</button></div></form></div></div></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><div><label for=\"address\" class=\"block text-sm font-medium text-gray-700 mb-1\">Email Address</label><div class=\"relative\"><input type=\"text\" name=\"address\" id=\"address\" required placeholder=\"username\" class=\"block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6\"><div class=\"pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3\"><i class=\"fa-solid fa-at text-gray-400\"></i></div></div></div><div><label for=\"password\" class=\"block text-sm font-medium text-gray-700 mb-1\">Password</label><div class=\"relative\"><input type=\"password\" name=\"password\" id=\"password\" required class=\"block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6\"><div class=\"pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3\"><i class=\"fa-solid fa-lock text-gray-400\"></i></div></div></div></div><div class=\"flex justify-end space-x-3 pt-2\"><button type=\"button\" class=\"rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50\" onclick=\"closeModal()\">Cancel</button> <button type=\"submit\" class=\"rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600\">Create</button></div></form></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

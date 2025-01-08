@@ -1,11 +1,11 @@
-package mailboxes
+package domains
 
 import (
 	"fmt"
 	db "github.com/danilshap/domains-generator/internal/db/sqlc"
 )
 
-templ EditForm(mailbox db.Mailbox) {
+templ BulkMailboxesForm(domain db.GetDomainByIDRow) {
 	<div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" id="modal-backdrop"></div>
 	<div class="fixed inset-0 z-10 overflow-y-auto">
 		<div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
@@ -19,13 +19,35 @@ templ EditForm(mailbox db.Mailbox) {
 						<i class="fa-solid fa-xmark text-xl"></i>
 					</button>
 				</div>
+				<div class="mb-5">
+					<h3 class="text-lg font-medium text-gray-900">Create Multiple Mailboxes</h3>
+					<p class="mt-1 text-sm text-gray-500">Create up to 100 mailboxes with a common prefix</p>
+				</div>
 				<form
 					class="space-y-6"
-					hx-put={ fmt.Sprintf("/mailboxes/%d", mailbox.ID) }
+					hx-post={ fmt.Sprintf("/domains/%d/bulk-mailboxes", domain.ID) }
 					hx-target="#modal"
 				>
+					<input type="hidden" name="domain_id" value={ fmt.Sprint(domain.ID) }/>
 					<div>
-						<label for="password" class="block text-sm font-medium text-gray-700">New Password</label>
+						<label for="prefix" class="block text-sm font-medium text-gray-700">Email Prefix</label>
+						<div class="relative mt-1">
+							<input
+								type="text"
+								name="prefix"
+								id="prefix"
+								required
+								class="block w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm shadow-sm transition-colors hover:border-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+								placeholder="user"
+							/>
+							<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+								<i class="fa-solid fa-at text-gray-400 text-sm"></i>
+							</div>
+						</div>
+						<p class="mt-1 text-xs text-gray-500">Mailboxes will be created as: prefix.random@{ domain.Name }</p>
+					</div>
+					<div>
+						<label for="password" class="block text-sm font-medium text-gray-700">Password</label>
 						<div class="relative mt-1">
 							<input
 								type="password"
@@ -38,6 +60,7 @@ templ EditForm(mailbox db.Mailbox) {
 								<i class="fa-solid fa-lock text-gray-400 text-sm"></i>
 							</div>
 						</div>
+						<p class="mt-1 text-xs text-gray-500">All mailboxes will use this password</p>
 					</div>
 					<div class="flex justify-end space-x-3">
 						<button
@@ -51,7 +74,7 @@ templ EditForm(mailbox db.Mailbox) {
 							type="submit"
 							class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
 						>
-							Save Changes
+							Create Mailboxes
 						</button>
 					</div>
 				</form>

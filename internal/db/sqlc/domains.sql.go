@@ -285,19 +285,26 @@ func (q *Queries) SetDomainStatus(ctx context.Context, arg SetDomainStatusParams
 	return err
 }
 
-const updateDomain = `-- name: UpdateDomain :exec
-UPDATE domains 
-SET name = $2, provider = $3
-WHERE id = $1
+const updateDomainAndMailboxesStatus = `-- name: UpdateDomainAndMailboxesStatus :exec
+WITH updated_domain AS (
+    UPDATE domains
+    SET status = $2
+    WHERE id = $1
+    AND status != $2
+    RETURNING id
+)
+UPDATE mailboxes
+SET status = $2
+WHERE domain_id = $1
+AND status != $2
 `
 
-type UpdateDomainParams struct {
-	ID       int32  `json:"id"`
-	Name     string `json:"name"`
-	Provider string `json:"provider"`
+type UpdateDomainAndMailboxesStatusParams struct {
+	DomainID int32 `json:"domain_id"`
+	Status   int32 `json:"status"`
 }
 
-func (q *Queries) UpdateDomain(ctx context.Context, arg UpdateDomainParams) error {
-	_, err := q.db.ExecContext(ctx, updateDomain, arg.ID, arg.Name, arg.Provider)
+func (q *Queries) UpdateDomainAndMailboxesStatus(ctx context.Context, arg UpdateDomainAndMailboxesStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updateDomainAndMailboxesStatus, arg.DomainID, arg.Status)
 	return err
 }

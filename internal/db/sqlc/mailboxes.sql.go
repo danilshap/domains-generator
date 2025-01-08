@@ -225,8 +225,14 @@ func (q *Queries) GetMailboxesByDomain(ctx context.Context, address string) ([]G
 }
 
 const getMailboxesByDomainID = `-- name: GetMailboxesByDomainID :many
-SELECT id, address, password, domain_id, created_at, status, is_deleted, settings, last_login, last_password_change, password_expires_at, user_id FROM mailboxes 
-WHERE domain_id = $1 AND is_deleted = false
+SELECT 
+    m.id, m.address, m.password, m.domain_id, m.created_at, m.status, m.is_deleted, m.settings, m.last_login, m.last_password_change, m.password_expires_at, m.user_id,
+    d.name as domain_name,
+    d.status as domain_status
+FROM mailboxes m
+JOIN domains d ON d.id = m.domain_id
+WHERE m.domain_id = $1
+ORDER BY m.created_at DESC
 LIMIT $2 OFFSET $3
 `
 
@@ -236,15 +242,32 @@ type GetMailboxesByDomainIDParams struct {
 	Offset   int32 `json:"offset"`
 }
 
-func (q *Queries) GetMailboxesByDomainID(ctx context.Context, arg GetMailboxesByDomainIDParams) ([]Mailbox, error) {
+type GetMailboxesByDomainIDRow struct {
+	ID                 int32                 `json:"id"`
+	Address            string                `json:"address"`
+	Password           string                `json:"password"`
+	DomainID           int32                 `json:"domain_id"`
+	CreatedAt          sql.NullTime          `json:"created_at"`
+	Status             int32                 `json:"status"`
+	IsDeleted          sql.NullBool          `json:"is_deleted"`
+	Settings           pqtype.NullRawMessage `json:"settings"`
+	LastLogin          sql.NullTime          `json:"last_login"`
+	LastPasswordChange sql.NullTime          `json:"last_password_change"`
+	PasswordExpiresAt  sql.NullTime          `json:"password_expires_at"`
+	UserID             int32                 `json:"user_id"`
+	DomainName         string                `json:"domain_name"`
+	DomainStatus       int32                 `json:"domain_status"`
+}
+
+func (q *Queries) GetMailboxesByDomainID(ctx context.Context, arg GetMailboxesByDomainIDParams) ([]GetMailboxesByDomainIDRow, error) {
 	rows, err := q.db.QueryContext(ctx, getMailboxesByDomainID, arg.DomainID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Mailbox{}
+	items := []GetMailboxesByDomainIDRow{}
 	for rows.Next() {
-		var i Mailbox
+		var i GetMailboxesByDomainIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Address,
@@ -258,6 +281,8 @@ func (q *Queries) GetMailboxesByDomainID(ctx context.Context, arg GetMailboxesBy
 			&i.LastPasswordChange,
 			&i.PasswordExpiresAt,
 			&i.UserID,
+			&i.DomainName,
+			&i.DomainStatus,
 		); err != nil {
 			return nil, err
 		}
@@ -365,12 +390,19 @@ func (q *Queries) GetMailboxesByUserID(ctx context.Context, arg GetMailboxesByUs
 }
 
 const getMailboxesCount = `-- name: GetMailboxesCount :one
-SELECT COUNT(*) FROM mailboxes
-WHERE is_deleted = false AND user_id = $1
+SELECT COUNT(*) 
+FROM mailboxes 
+WHERE user_id = $1 
+  AND CASE WHEN array_length($2::int[], 1) > 0 THEN domain_id = ANY($2) ELSE true END
 `
 
-func (q *Queries) GetMailboxesCount(ctx context.Context, userID int32) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getMailboxesCount, userID)
+type GetMailboxesCountParams struct {
+	UserID       int32   `json:"user_id"`
+	DomainFilter []int32 `json:"domain_filter"`
+}
+
+func (q *Queries) GetMailboxesCount(ctx context.Context, arg GetMailboxesCountParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getMailboxesCount, arg.UserID, pq.Array(arg.DomainFilter))
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -539,26 +571,20 @@ func (q *Queries) SetMailboxStatus(ctx context.Context, arg SetMailboxStatusPara
 	return err
 }
 
-const updateMailbox = `-- name: UpdateMailbox :exec
+const updateMailboxPassword = `-- name: UpdateMailboxPassword :exec
 UPDATE mailboxes
-SET address = $2, domain_id = $3, user_id = $4
+SET password = $2,
+    updated_at = NOW()
 WHERE id = $1
 `
 
-type UpdateMailboxParams struct {
+type UpdateMailboxPasswordParams struct {
 	ID       int32  `json:"id"`
-	Address  string `json:"address"`
-	DomainID int32  `json:"domain_id"`
-	UserID   int32  `json:"user_id"`
+	Password string `json:"password"`
 }
 
-func (q *Queries) UpdateMailbox(ctx context.Context, arg UpdateMailboxParams) error {
-	_, err := q.db.ExecContext(ctx, updateMailbox,
-		arg.ID,
-		arg.Address,
-		arg.DomainID,
-		arg.UserID,
-	)
+func (q *Queries) UpdateMailboxPassword(ctx context.Context, arg UpdateMailboxPasswordParams) error {
+	_, err := q.db.ExecContext(ctx, updateMailboxPassword, arg.ID, arg.Password)
 	return err
 }
 
