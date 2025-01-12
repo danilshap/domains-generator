@@ -65,6 +65,21 @@ func (mr *MockStoreMockRecorder) CreateMailbox(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateMailbox", reflect.TypeOf((*MockStore)(nil).CreateMailbox), arg0, arg1)
 }
 
+// CreateNotification mocks base method.
+func (m *MockStore) CreateNotification(arg0 context.Context, arg1 db.CreateNotificationParams) (db.Notification, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateNotification", arg0, arg1)
+	ret0, _ := ret[0].(db.Notification)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateNotification indicates an expected call of CreateNotification.
+func (mr *MockStoreMockRecorder) CreateNotification(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNotification", reflect.TypeOf((*MockStore)(nil).CreateNotification), arg0, arg1)
+}
+
 // CreateUser mocks base method.
 func (m *MockStore) CreateUser(arg0 context.Context, arg1 db.CreateUserParams) (db.User, error) {
 	m.ctrl.T.Helper()
@@ -346,6 +361,51 @@ func (mr *MockStoreMockRecorder) GetMailboxesWithFilters(arg0, arg1 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMailboxesWithFilters", reflect.TypeOf((*MockStore)(nil).GetMailboxesWithFilters), arg0, arg1)
 }
 
+// GetNotifications mocks base method.
+func (m *MockStore) GetNotifications(arg0 context.Context, arg1 db.GetNotificationsParams) ([]db.Notification, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNotifications", arg0, arg1)
+	ret0, _ := ret[0].([]db.Notification)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNotifications indicates an expected call of GetNotifications.
+func (mr *MockStoreMockRecorder) GetNotifications(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNotifications", reflect.TypeOf((*MockStore)(nil).GetNotifications), arg0, arg1)
+}
+
+// GetNotificationsCount mocks base method.
+func (m *MockStore) GetNotificationsCount(arg0 context.Context, arg1 int32) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNotificationsCount", arg0, arg1)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNotificationsCount indicates an expected call of GetNotificationsCount.
+func (mr *MockStoreMockRecorder) GetNotificationsCount(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNotificationsCount", reflect.TypeOf((*MockStore)(nil).GetNotificationsCount), arg0, arg1)
+}
+
+// GetUnreadNotificationsCount mocks base method.
+func (m *MockStore) GetUnreadNotificationsCount(arg0 context.Context, arg1 int32) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUnreadNotificationsCount", arg0, arg1)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUnreadNotificationsCount indicates an expected call of GetUnreadNotificationsCount.
+func (mr *MockStoreMockRecorder) GetUnreadNotificationsCount(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnreadNotificationsCount", reflect.TypeOf((*MockStore)(nil).GetUnreadNotificationsCount), arg0, arg1)
+}
+
 // GetUserByDomainID mocks base method.
 func (m *MockStore) GetUserByDomainID(arg0 context.Context, arg1 int32) (db.User, error) {
 	m.ctrl.T.Helper()
@@ -449,6 +509,34 @@ func (m *MockStore) ListUsers(arg0 context.Context, arg1 db.ListUsersParams) ([]
 func (mr *MockStoreMockRecorder) ListUsers(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUsers", reflect.TypeOf((*MockStore)(nil).ListUsers), arg0, arg1)
+}
+
+// MarkAllNotificationsRead mocks base method.
+func (m *MockStore) MarkAllNotificationsRead(arg0 context.Context, arg1 int32) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkAllNotificationsRead", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkAllNotificationsRead indicates an expected call of MarkAllNotificationsRead.
+func (mr *MockStoreMockRecorder) MarkAllNotificationsRead(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkAllNotificationsRead", reflect.TypeOf((*MockStore)(nil).MarkAllNotificationsRead), arg0, arg1)
+}
+
+// MarkNotificationRead mocks base method.
+func (m *MockStore) MarkNotificationRead(arg0 context.Context, arg1 int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkNotificationRead", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkNotificationRead indicates an expected call of MarkNotificationRead.
+func (mr *MockStoreMockRecorder) MarkNotificationRead(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkNotificationRead", reflect.TypeOf((*MockStore)(nil).MarkNotificationRead), arg0, arg1)
 }
 
 // SetDomainStatus mocks base method.

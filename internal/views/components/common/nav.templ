@@ -15,12 +15,18 @@ templ Nav() {
 					</a>
 				</nav>
 				<div class="absolute bottom-4 inset-x-0 px-4">
-					<form action="/logout" method="POST">
-						<button type="submit" class="w-full flex items-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-2 transition-colors">
-							<i class="fa-solid fa-right-from-bracket w-5 text-[18px]"></i>
-							<span class="ml-3 text-[13px] opacity-0 group-hover/nav:opacity-100 whitespace-nowrap transition-opacity duration-300">Sign out</span>
-						</button>
-					</form>
+					<div class="space-y-2">
+						<a href="/notifications" class="w-full flex items-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-2 transition-colors">
+							<i class="fa-regular fa-bell w-5 text-[18px]"></i>
+							<span class="ml-3 text-[13px] opacity-0 group-hover/nav:opacity-100 whitespace-nowrap transition-opacity duration-300">Notifications</span>
+						</a>
+						<form action="/logout" method="POST">
+							<button type="submit" class="w-full flex items-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-2 transition-colors">
+								<i class="fa-solid fa-right-from-bracket w-5 text-[18px]"></i>
+								<span class="ml-3 text-[13px] opacity-0 group-hover/nav:opacity-100 whitespace-nowrap transition-opacity duration-300">Sign out</span>
+							</button>
+						</form>
+					</div>
 				</div>
 			</div>
 		</aside>

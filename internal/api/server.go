@@ -81,6 +81,12 @@ func (s *Server) setupRoutes() {
 		r.Delete("/{id}", s.handleDeleteMailbox)
 		r.Put("/{id}/status", s.handleUpdateMailboxStatus)
 	})
+
+	s.router.Route("/notifications", func(r chi.Router) {
+		r.Get("/", s.handleListNotifications)
+		r.Post("/{id}/mark-read", s.handleMarkNotificationRead)
+		r.Post("/mark-all-read", s.handleMarkAllNotificationsRead)
+	})
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

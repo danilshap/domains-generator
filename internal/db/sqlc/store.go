@@ -47,6 +47,13 @@ type Store interface {
 	DeleteUser(ctx context.Context, id int32) error
 	GetUserStats(ctx context.Context, id int32) (GetUserStatsRow, error)
 	VerifyUserCredentials(ctx context.Context, email string) (User, error)
+
+	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
+	GetNotifications(ctx context.Context, arg GetNotificationsParams) ([]Notification, error)
+	GetNotificationsCount(ctx context.Context, userID int32) (int64, error)
+	GetUnreadNotificationsCount(ctx context.Context, userID int32) (int64, error)
+	MarkAllNotificationsRead(ctx context.Context, userID int32) error
+	MarkNotificationRead(ctx context.Context, id int64) error
 }
 
 // SQLStore provides all functions to execute db queries and transactions
