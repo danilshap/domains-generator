@@ -52,16 +52,13 @@ function showNotification(notification) {
 
     document.body.appendChild(toast);
 
-    // Удаляем уведомление через 5 секунд
     setTimeout(() => {
         toast.remove();
     }, 5000);
 }
 
-// Подключаемся при загрузке страницы
 document.addEventListener('DOMContentLoaded', connectWebSocket);
 
-// Переподключаемся при возвращении на страницу
 document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible' && (!ws || ws.readyState !== WebSocket.OPEN)) {
         connectWebSocket();

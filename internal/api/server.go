@@ -110,7 +110,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
-			return true // В продакшене нужно настроить проверку origin
+			return true
 		},
 	}
 

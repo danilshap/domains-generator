@@ -62,7 +62,6 @@ func (s *WebSocketService) SendNotification(userID int32, notification WSNotific
 		}
 	}
 
-	// Отправляем событие для обновления бейджа
 	triggerMsg := WSMessage{
 		Type:    "trigger",
 		Payload: "newNotification",
