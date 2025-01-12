@@ -94,7 +94,22 @@ func (s *Server) handleMarkNotificationRead(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	notification, err := s.store.GetNotificationByID(r.Context(), int64(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	notificationView := view.NotificationView{
+		ID:        int32(notification.ID),
+		Title:     notification.Title,
+		Message:   notification.Message,
+		Type:      string(notification.Type),
+		IsRead:    notification.ReadAt.Valid,
+		CreatedAt: notification.CreatedAt,
+	}
+
+	notifications.SingleNotification(notificationView).Render(r.Context(), w)
 }
 
 func (s *Server) handleMarkAllNotificationsRead(w http.ResponseWriter, r *http.Request) {
@@ -111,4 +126,25 @@ func (s *Server) handleMarkAllNotificationsRead(w http.ResponseWriter, r *http.R
 	}
 
 	s.handleListNotifications(w, r)
+}
+
+func (s *Server) handleUnreadNotificationsCount(w http.ResponseWriter, r *http.Request) {
+	user, err := getCurrentUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	count, err := s.store.GetUnreadNotificationsCount(r.Context(), user.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if count > 0 {
+		w.Header().Set("HX-Trigger", "showUnreadBadge")
+	} else {
+		w.Header().Set("HX-Trigger", "hideUnreadBadge")
+	}
+	w.WriteHeader(http.StatusOK)
 }

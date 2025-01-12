@@ -49,6 +49,7 @@ type Store interface {
 	VerifyUserCredentials(ctx context.Context, email string) (User, error)
 
 	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
+	GetNotificationByID(ctx context.Context, id int64) (Notification, error)
 	GetNotifications(ctx context.Context, arg GetNotificationsParams) ([]Notification, error)
 	GetNotificationsCount(ctx context.Context, userID int32) (int64, error)
 	GetUnreadNotificationsCount(ctx context.Context, userID int32) (int64, error)

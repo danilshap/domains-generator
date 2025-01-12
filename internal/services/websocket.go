@@ -1,4 +1,4 @@
-package service
+package services
 
 import (
 	"sync"
@@ -58,6 +58,17 @@ func (s *WebSocketService) SendNotification(userID int32, notification WSNotific
 
 	for _, conn := range conns {
 		if err := conn.WriteJSON(msg); err != nil {
+			s.RemoveConnection(userID, conn)
+		}
+	}
+
+	// Отправляем событие для обновления бейджа
+	triggerMsg := WSMessage{
+		Type:    "trigger",
+		Payload: "newNotification",
+	}
+	for _, conn := range conns {
+		if err := conn.WriteJSON(triggerMsg); err != nil {
 			s.RemoveConnection(userID, conn)
 		}
 	}

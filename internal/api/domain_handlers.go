@@ -1,14 +1,17 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
 
 	db "github.com/danilshap/domains-generator/internal/db/sqlc"
 	"github.com/danilshap/domains-generator/internal/models/view"
+	"github.com/danilshap/domains-generator/internal/services"
 	"github.com/danilshap/domains-generator/internal/views/components/domains"
 	"github.com/danilshap/domains-generator/internal/views/layouts"
 	"github.com/go-chi/chi/v5"
@@ -207,6 +210,12 @@ func (s *Server) handleDomainDetails(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUpdateDomainStatus(w http.ResponseWriter, r *http.Request) {
+	user, err := getCurrentUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -235,10 +244,36 @@ func (s *Server) handleUpdateDomainStatus(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if status == 2 {
+		go func() {
+			domain, err := s.store.GetDomainByID(context.Background(), int32(id))
+			if err != nil {
+				log.Printf("Failed to get domain for notification: %v\n", err)
+				return
+			}
+
+			notification, err := s.store.CreateNotification(context.Background(), db.CreateNotificationParams{
+				UserID:  user.UserID,
+				Title:   "Domain disabled",
+				Message: fmt.Sprintf("Domain %s status updated to %d", domain.Name, status),
+				Type:    db.NotificationTypeInfo,
+			})
+			if err != nil {
+				log.Printf("Failed to create notification: %v\n", err)
+				return
+			}
+
+			log.Printf("Sending WebSocket notification for user %d\n", user.UserID)
+			s.wsService.SendNotification(user.UserID, services.WSNotification{
+				Title:   notification.Title,
+				Message: notification.Message,
+				Type:    string(notification.Type),
+			})
+		}()
+	}
+
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Trigger", `{"showMessage": "Domain status updated successfully"}`)
-		w.Header().Set("HX-Redirect", fmt.Sprintf("/domains/%d", id))
-		w.WriteHeader(http.StatusOK)
+		s.handleDomainDetails(w, r)
 		return
 	}
 

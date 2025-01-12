@@ -17,7 +17,7 @@ type DetailsData struct {
 }
 
 templ Details(data DetailsData) {
-	<div class="space-y-6">
+	<div class="space-y-6" id="domains-details">
 		// Header section
 		<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
 			<div class="px-6 py-5 border-b border-gray-100">
@@ -41,6 +41,7 @@ templ Details(data DetailsData) {
 									templ.KV("hover:text-green-600 hover:bg-green-50", data.Domain.Status == 2),
 								}
 								hx-put={ fmt.Sprintf("/domains/%d/status", data.Domain.ID) }
+								hx-target="#domains-details"
 								hx-vals={ fmt.Sprintf(`{"status": %d}`, map[int32]int32{1: 2, 2: 1}[data.Domain.Status]) }
 								if data.Domain.Status == 1 {
 									hx-confirm="Are you sure you want to deactivate this domain? All associated mailboxes will be deactivated as well."

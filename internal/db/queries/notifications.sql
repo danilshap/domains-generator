@@ -27,4 +27,8 @@ INSERT INTO notifications (
     user_id, title, message, type
 ) VALUES (
     $1, $2, $3, $4
-) RETURNING *; 
+) RETURNING *;
+
+-- name: GetNotificationByID :one
+SELECT * FROM notifications
+WHERE id = $1 LIMIT 1; 
